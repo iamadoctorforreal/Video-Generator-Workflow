@@ -114,7 +114,7 @@ def get_word_timestamps(audio_path, script_text=None):
         if not script_vocab or key in script_vocab:
             return script_vocab.get(key, whisper_word)
         # Fuzzy match against script vocabulary
-        matches = difflib.get_close_matches(key, script_vocab.keys(), n=1, cutoff=0.75)
+        matches = difflib.get_close_matches(key, script_vocab.keys(), n=1, cutoff=0.65)
         if matches:
             return script_vocab[matches[0]]
         return whisper_word  # no good match — keep Whisper's version
