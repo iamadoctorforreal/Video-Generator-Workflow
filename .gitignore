@@ -38,3 +38,6 @@ voices/
 voices/*.pt
 voices/**/*.pt
 config.json
+voices.json
+*.bin
+kokoro-v0_19.onnx
