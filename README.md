@@ -1,6 +1,8 @@
 # Kokoro Video Generator
 
-This project is a dynamic, automated landscape and portrait video generation script using the [Kokoro TTS](https://huggingface.co/hexgrad/Kokoro-82M) engine, `faster-whisper` for word-level sync, and `MoviePy` for video compositing and captions.
+This project is a dynamic, automated landscape and portrait video generation script using the **Kokoro-ONNX** TTS engine (which avoids the dependency nightmare and `numpy` incompatibility issues of the standard Kokoro library), `faster-whisper` for word-level sync, and `MoviePy` for video compositing and captions.
+
+**⚠️ Important Note on Orientation:** It's highly recommended to use `"orientation": "landscape"` for your videos. Generating videos in `"portrait"` mode is still being tuned—currently, captions generated on a portrait canvas can occasionally be cut off at the edges of the screen because the text wrapping width isn't fully constrained to the narrower view yet.
 
 ## Prerequisites
 Before you start, make sure you have the following installed on your machine:
@@ -33,13 +35,13 @@ Before you start, make sure you have the following installed on your machine:
    ```
 
 ## Missing Files (Model Weights & Media)
-Because AI model files can be huge, they are excluded from this repository via `.gitignore` and Git LFS. You need to manually download them.
+Because AI model files can be huge, they are excluded from this repository via `.gitignore`. You need to manually download them.
 
-1. **Download Kokoro AI Weights:**
+1. **Download Kokoro-ONNX AI Weights:**
    Download the following files and place them inside the root `kokoro` directory:
    - `kokoro-v0_19.onnx`
    - `voices-v1.0.bin`
-   *(You can generally find these on the Kokoro TTS Hugging Face repository).*
+   *(You can find these on the [Kokoro-ONNX Hugging Face repository](https://huggingface.co/hexgrad/Kokoro-82M/tree/main)).*
 
 2. **Add Background Music:**
    Ensure you have a background music file named `bg_music.mp3` in the root directory. This is used by the script for audio mixing.
@@ -67,7 +69,7 @@ Once the server is running, you can hit the `/generate-ghibli-video` endpoint wi
   "add_captions": true,
   "add_effects": true,
   "caption_position": "bottom",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "scenes": [
     {
       "text": "Hello world, this is the first scene.",
@@ -81,4 +83,4 @@ Once the server is running, you can hit the `/generate-ghibli-video` endpoint wi
 }
 ```
 
-The server will automatically generate the audio, align captions with Whisper, apply pan/zoom effects, add transitions, and mix background music, saving the final file as `Ghibli_Story_XXXX.mp4`.
+The server will automatically generate the audio via Kokoro-ONNX, align captions with Whisper, apply pan/zoom effects, add transitions, and mix background music, saving the final file as `Ghibli_Story_XXXX.mp4`.
