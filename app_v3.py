@@ -39,7 +39,7 @@ whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
 # Initialize the Kokoro Pipeline
 #pipeline = KPipeline(lang_code='a')
 # You will need to download these two files (see link below)
-kokoro = Kokoro("kokoro-v0_19.onnx", "voices-v1.0.bin") 
+kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin") 
 
 
 class Scene(BaseModel):

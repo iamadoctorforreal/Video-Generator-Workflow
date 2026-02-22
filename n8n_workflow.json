@@ -1,0 +1,129 @@
+{
+  "name": "Working Video Generation n8n Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Form for Manual Trigger",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Script (one line per scene)",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "voice",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "af_bella"
+                  },
+                  {
+                    "option": "af_sarah"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        304,
+        336
+      ],
+      "id": "0f38e718-91b7-4ae3-b5a0-a873e7ce1eca",
+      "name": "Upload Voice Over Script Ensure Double Space In between Scenes And Select Voice",
+      "webhookId": "753738da-f07f-4f5d-a594-0d571b6d8614"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n// Get the big script and split by double newline (paragraphs = scenes)\nconst rawScript = input[\"Script (one line per scene)\"] || \"\";\nconst voice = input[\"voice\"] || \"af_bella\" ||\"af_sarah\";\n// Split on blank lines — each paragraph becomes one scene\nconst scenes = rawScript\n  .split(/\\r?\\n\\r?\\n/)           // double newline = scene break\n  .map(s => s.trim())\n  .filter(s => s.length > 0)\n  .map(text => ({\n    text: text,\n    media_name: \"detect\"\n  }));\nreturn [{\n  json: {\n    scenes: scenes,\n    voice: voice,\n    add_captions: true,\n    add_effects: true,\n    caption_position: \"bottom\",\n    orientation: \"landscape\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        336
+      ],
+      "id": "4957f695-baf6-4637-98a9-af2a3ef0e524",
+      "name": "Formats Output For Scenes And Voice"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.171:8000/generate-ghibli-video",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 3600000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1488,
+        336
+      ],
+      "id": "1fb78f1f-19db-4b5f-a298-8607bf9db392",
+      "name": "Send Video Generation Request To FastAPI of app_v3.py"
+    }
+  ],
+  "pinData": {
+    "Upload Voice Over Script Ensure Double Space In between Scenes And Select Voice": [
+      {
+        "json": {
+          "Script (one line per scene)": "Ramadan is here, and every year we make the same quiet promise to ourselves: this Ramadan will be different. But different how?\r\n\r\nWhat if this Ramadan was more than rituals, more than hunger, more than schedules and exhaustion disguised as productivity, but something deeper?\r\n\r\nWhat if it was a sacred rehabilitation center for your entire being, not just fasting from food but resetting your heart, rebuilding your soul, rewiring your mind, and retraining your body?\r\n\r\nThis year we begin a four-week journey called Ramadan Reset: Aligning Your Heart, Soul, Mind and Body, not another reminder series, but a guided transformation.\r\n\r\nWeek One is the heart, where we release grudges, heal silent pain, and remove spiritual rust that weighs us down.\r\n\r\nWeek Two is the soul, where we move from performance to presence and from routine to real relationship with Allah.\r\n\r\nWeek Three is the mind, where we challenge the voice that says I am not enough and rewrite the internal scripts that keep us spiritually stuck.\r\n\r\nWeek Four is the body, where we honor fasting as discipline, balance, and mastery, not just endurance.\r\n\r\nBecause Ramadan is not meant to exhaust you, it is meant to refine you, so do not just scroll through Ramadan, journey through it.\r\n\r\nFollow the blog, turn on notifications, and walk this path with us, because this Ramadan we are not just fasting, we are resetting. 🌙",
+          "voice": "af_sarah",
+          "submittedAt": "2026-02-19T21:42:53.974+01:00",
+          "formMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Upload Voice Over Script Ensure Double Space In between Scenes And Select Voice": {
+      "main": [
+        [
+          {
+            "node": "Formats Output For Scenes And Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formats Output For Scenes And Voice": {
+      "main": [
+        [
+          {
+            "node": "Send Video Generation Request To FastAPI of app_v3.py",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Lagos",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "b7b24ed7-df63-4d81-9b32-3b58bb6554ee",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "539fedbca511a35f7af6bfe2828633307fcd9a0d163a852c26e758923dbeb21c"
+  },
+  "id": "n3YcK3hl2agtVliW",
+  "tags": []
+}
