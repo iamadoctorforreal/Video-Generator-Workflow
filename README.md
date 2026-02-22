@@ -39,9 +39,8 @@ Because AI model files can be huge, they are excluded from this repository via `
 
 1. **Download Kokoro-ONNX AI Weights:**
    Download the following files and place them inside the root `kokoro` directory:
-   - `kokoro-v0_19.onnx`
-   - `voices-v1.0.bin`
-   *(You can find these on the [Kokoro-ONNX Hugging Face repository](https://huggingface.co/hexgrad/Kokoro-82M/tree/main)).*
+   - [`kokoro-v1.0.onnx`](https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx) (Note: rename this to `kokoro-v0_19.onnx` if you don't want to change the code structure)
+   - [`voices-v1.0.bin`](https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin)
 
 2. **Add Background Music:**
    Ensure you have a background music file named `bg_music.mp3` in the root directory. This is used by the script for audio mixing.
