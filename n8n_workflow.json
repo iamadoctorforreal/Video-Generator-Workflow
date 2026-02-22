@@ -54,34 +54,6 @@
                   }
                 ]
               }
-            },
-            {
-              "fieldLabel": "Add Captions",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "true"
-                  },
-                  {
-                    "option": "false"
-                  }
-                ]
-              }
-            },
-            {
-              "fieldLabel": "Add Effects",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "true"
-                  },
-                  {
-                    "option": "false"
-                  }
-                ]
-              }
             }
           ]
         },
@@ -99,7 +71,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst rawScript = input[\"Script (one line per scene)\"] || \"\";\nconst voice = input[\"voice\"] || \"af_bella\";\nconst orientation = input[\"Orientation\"] || \"landscape\";\nconst caption_position = input[\"Caption Position\"] || \"bottom\";\nconst add_captions = input[\"Add Captions\"] !== \"false\";\nconst add_effects = input[\"Add Effects\"] !== \"false\";\n\nconst scenes = rawScript\n  .split(/\\r?\\n\\r?\\n/)\n  .map(s => s.trim())\n  .filter(s => s.length > 0)\n  .map(text => ({\n    text: text,\n    media_name: \"detect\"\n  }));\nreturn [{\n  json: {\n    scenes: scenes,\n    voice: voice,\n    add_captions: add_captions,\n    add_effects: add_effects,\n    caption_position: caption_position,\n    orientation: orientation\n  }\n}];"
+        "jsCode": "const input = $input.first().json;\nconst rawScript = input[\"Script (one line per scene)\"] || \"\";\nconst voice = input[\"voice\"] || \"af_bella\";\nconst orientation = input[\"Orientation\"] || \"landscape\";\nconst caption_position = input[\"Caption Position\"] || \"bottom\";\n\nconst scenes = rawScript\n  .split(/\\r?\\n\\r?\\n/)\n  .map(s => s.trim())\n  .filter(s => s.length > 0)\n  .map(text => ({\n    text: text,\n    media_name: \"detect\"\n  }));\nreturn [{\n  json: {\n    scenes: scenes,\n    voice: voice,\n    add_captions: true,\n    add_effects: true,\n    caption_position: caption_position,\n    orientation: orientation\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
