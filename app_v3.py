@@ -152,7 +152,7 @@ def create_dynamic_captions(words, clip_size, active_index=0, caption_position="
     FONT = r'C:\Windows\Fonts\arialbd.ttf'
     GAP = 10
     GROUP_SIZE = 4
-    MAX_WIDTH = int(w * 0.92)  # never let group exceed 92% of canvas
+    MAX_WIDTH = int(w * 0.85)  # 85% of canvas — leaves room for stroke overflow
 
     # Build groups of 4 words
     groups = []
@@ -171,7 +171,10 @@ def create_dynamic_captions(words, clip_size, active_index=0, caption_position="
                 measured = []
                 for word_obj in group:
                     txt = word_obj['word'].upper()
+                    # Measure with stroke_width=4 (the widest the word will ever render)
+                    # This ensures the font shrink loop accounts for the full rendered size
                     m = TextClip(text=txt, font=FONT, font_size=font_size,
+                                 stroke_color='black', stroke_width=4,
                                  method='label', margin=margin)
                     measured.append({'txt': txt, 'obj': word_obj,
                                      'w': int(m.w), 'h': int(m.h)})
