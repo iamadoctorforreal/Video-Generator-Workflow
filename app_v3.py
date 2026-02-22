@@ -151,8 +151,8 @@ def create_dynamic_captions(words, clip_size, active_index=0, caption_position="
 
     FONT = r'C:\Windows\Fonts\arialbd.ttf'
     GAP = 10
-    GROUP_SIZE = 4
-    MAX_WIDTH = int(w * 0.85)  # 85% of canvas — leaves room for stroke overflow
+    GROUP_SIZE = 4 if w > 1000 else 2
+    MAX_WIDTH = int(w * 0.90)  # 90% of canvas — leaves room for stroke overflow
 
     # Build groups of 4 words
     groups = []
