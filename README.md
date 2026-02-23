@@ -4,6 +4,24 @@ This project is a dynamic, automated landscape and portrait video generation scr
 
 The script supports both **Landscape** and **Portrait** orientations, with smart caption wrapping that automatically adjusts based on the canvas width to ensure text never overflows.
 
+## 🚀 Quick Start (Docker) - Recommended
+
+The easiest way to run this project without worrying about Python versions or system dependencies like ImageMagick is to use Docker.
+
+1. **Install Docker:** Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+2. **Download Models:** Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder (see download links below).
+3. **Run the Server:**
+   ```bash
+   docker-compose up --build
+   ```
+The API will be available at `http://localhost:8000`.
+
+---
+
+## 🛠️ Manual Installation (Local)
+
+If you prefer to run it directly on your machine:
+
 ## Prerequisites
 Before you start, make sure you have the following installed on your machine:
 
