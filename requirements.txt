@@ -1,40 +1,39 @@
-kokoro  # Official Kokoro TTS library (v1.0 model support)
-misaki  # G2P library for Kokoro (multi-language support)
-torch  # PyTorch for model inference (for GPU support, see README.md for CUDA-specific installation)
-torchaudio  # PyTorch audio processing library
-soundfile  # Audio file handling
-huggingface-hub  # Model downloads from Hugging Face
-gradio  # Web interface
-pydub  # For audio format conversion
-espeakng-loader  # For loading espeak-ng library
-phonemizer-fork  # For phoneme generation
-wheel  # For building packages
-setuptools  # For installing packages
-maturin  # Build dependency for underthesea-core
-num2words  # For number to word conversion
-spacy  # For text processing
-tqdm  # Progress bars
-psutil  # System and process monitoring
-packaging  # Version parsing for dependency checking
-numpy<2.0 # Numerical computing
-underthesea
+# Core API & Server
+fastapi
+uvicorn
+pydantic
+python-multipart
 
-# Japan Language Libraries
+# AI & Media Processing
+kokoro-onnx
+faster-whisper
+moviepy>=2.0.0
+soundfile
+numpy>=1.24.0
+torch --index-url https://download.pytorch.org/whl/cpu
+torchaudio --index-url https://download.pytorch.org/whl/cpu
+huggingface-hub
+phonemizer-fork
+
+# Optional/Additional from original requirements
+misaki
+pydub
+num2words
+spacy
+tqdm
+psutil
+packaging
+wheel
+setuptools
+maturin
 fugashi[unidic]
 jaconv
 mojimoji
 pyopenjtalk
-
-# Korean Language Libraries
 jamo
 nltk
-
-# Mandarin Language Libraries
 cn2an
 jieba
 ordered-set
 pypinyin
 pypinyin-dict
-
-# Hebrew Language Libraries
-https://files.pythonhosted.org/packages/44/17/9efdef222f2fc8e1ca721d919738d69d8b2358554a99f27b0764905f60fd/mishkal_hebrew-0.3.2-py3-none-any.whl

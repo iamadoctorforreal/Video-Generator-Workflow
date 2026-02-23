@@ -18,8 +18,14 @@ from moviepy import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 
-# Set the ImageMagick path for MoviePy v2.0+
-os.environ["IMAGEMAGICK_BINARY"] = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"
+import platform
+
+# Set the ImageMagick path based on OS
+if platform.system() == "Windows":
+    os.environ["IMAGEMAGICK_BINARY"] = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"
+else:
+    # Linux / Docker
+    os.environ["IMAGEMAGICK_BINARY"] = "/usr/bin/convert"
 
 app = FastAPI()
 
