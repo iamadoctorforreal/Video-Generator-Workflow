@@ -2,7 +2,7 @@
 
 This project is a dynamic, automated landscape and portrait video generation script using the **Kokoro-ONNX** TTS engine (which avoids the dependency nightmare and `numpy` incompatibility issues of the standard Kokoro library), `faster-whisper` for word-level sync, and `MoviePy` for video compositing and captions.
 
-**⚠️ Important Note on Orientation:** It's highly recommended to use `"orientation": "landscape"` for your videos. Generating videos in `"portrait"` mode is still being tuned—currently, captions generated on a portrait canvas can occasionally be cut off at the edges of the screen because the text wrapping width isn't fully constrained to the narrower view yet.
+The script supports both **Landscape** and **Portrait** orientations, with smart caption wrapping that automatically adjusts based on the canvas width to ensure text never overflows.
 
 ## Prerequisites
 Before you start, make sure you have the following installed on your machine:
