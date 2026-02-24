@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     cmake \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # MoviePy/ImageMagick Security Policy Fix

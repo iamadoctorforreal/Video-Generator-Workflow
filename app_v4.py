@@ -17,8 +17,16 @@ from moviepy import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 
-# Set the ImageMagick path for MoviePy v2.0+
-os.environ["IMAGEMAGICK_BINARY"] = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"
+import platform
+
+# Set the ImageMagick path based on OS
+if platform.system() == "Windows":
+    os.environ["IMAGEMAGICK_BINARY"] = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"
+    FONT = r'C:\Windows\Fonts\arialbd.ttf'
+else:
+    # Linux / Docker
+    os.environ["IMAGEMAGICK_BINARY"] = "/usr/bin/convert"
+    FONT = '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
 
 app = FastAPI()
 
@@ -94,7 +102,7 @@ def create_dynamic_captions(words, clip_size, active_index=0, caption_position="
     }
     y_pos = position_map.get(caption_position, h_bg * 0.78)
 
-    FONT = r'C:\Windows\Fonts\arialbd.ttf'
+    # FONT is now defined globally at the top
     FONT_SIZE = 80
     GAP = 12
     WORDS_PER_GROUP = 4
