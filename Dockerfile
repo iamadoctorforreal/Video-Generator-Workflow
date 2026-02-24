@@ -27,8 +27,8 @@ RUN sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@\*"/g' /
 WORKDIR /app
 
 # Copy and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-cpu.txt .
+RUN pip install --no-cache-dir -r requirements-cpu.txt
 
 # Copy the rest of the application
 COPY . .

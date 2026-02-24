@@ -32,25 +32,21 @@ Before you start, make sure you have the following installed on your machine:
 
 ## Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/iamadoctorforreal/kokoro.git
-   cd kokoro
-   ```
+Choose the installation path that matches your hardware:
 
-2. **Create and activate a virtual environment (Recommended):**
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
+### Path A: Standard Install (Supports GPU)
+Recommended if you have an **NVIDIA GPU** and want the fastest possible rendering speeds.
+```bash
+pip install -r requirements.txt
+```
+*Note: This will download several gigabytes of data (PyTorch with CUDA).*
 
-3. **Install the dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Path B: Lightweight Install (CPU Only)
+Recommended for most laptops, or if you don't have a dedicated NVIDIA GPU.
+```bash
+pip install -r requirements-cpu.txt
+```
+*Note: This is much smaller (~200MB) and faster to download.*
 
 ## Missing Files (Model Weights & Media)
 Because AI model files can be huge, they are excluded from this repository via `.gitignore`. You need to manually download them.

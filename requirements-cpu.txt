@@ -1,4 +1,4 @@
-# Standard Requirements (Supports GPU if available)
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # Core API & Server
 fastapi
