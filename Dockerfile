@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     imagemagick \
     libespeak-ng1 \
     git \
+    build-essential \
+    cmake \
     && rm -rf /var/lib/apt/lists/*
 
 # MoviePy/ImageMagick Security Policy Fix
