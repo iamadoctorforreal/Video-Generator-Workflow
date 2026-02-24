@@ -1,3 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Core API & Server
 fastapi
 uvicorn
@@ -10,8 +12,8 @@ faster-whisper
 moviepy>=2.0.0
 soundfile
 numpy>=1.24.0
-torch --index-url https://download.pytorch.org/whl/cpu
-torchaudio --index-url https://download.pytorch.org/whl/cpu
+torch
+torchaudio
 huggingface-hub
 phonemizer-fork
 
