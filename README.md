@@ -4,17 +4,29 @@ This project is a dynamic, automated landscape and portrait video generation scr
 
 The script supports both **Landscape** and **Portrait** orientations, with smart caption wrapping that automatically adjusts based on the canvas width to ensure text never overflows.
 
-## 🚀 Quick Start (Docker) - Recommended
+## � Running with Docker (Recommended)
 
-The easiest way to run this project without worrying about Python versions or system dependencies like ImageMagick is to use Docker.
+This project uses **Docker Compose** to run both the Video API and n8n simultaneously in an isolated environment. This is the fastest way to get started.
 
-1. **Install Docker:** Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
-2. **Download Models:** Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder (see download links below).
-3. **Run the Server:**
-   ```bash
-   docker-compose up --build
-   ```
-The API will be available at `http://localhost:8000`.
+### 1. Prerequisites
+- **Docker Desktop** installed and running.
+- **Model Files**: DOWNLOAD `kokoro-v1.0.onnx` and `voices-v1.0.bin` (links below) and place them in the root folder.
+- **Media**: Ensure you have some images in the `images/` folder and a `bg_music.mp3` file.
+
+### 2. Start the Services
+Run this command in your terminal:
+```bash
+docker-compose up --build
+```
+
+### 3. Access your Tools
+Once the containers are running:
+- **🎨 Web Studio (GUI):** Go to [http://localhost:8000](http://localhost:8000) (Use this for manual video creation).
+- **🤖 n8n Automation:** Go to [http://localhost:5678](http://localhost:5678) (Use this for automated workflows).
+
+> [!TIP]
+> **GitHub Codespaces Users**: If you are in a Codespace, GitHub will automatically "forward" these ports. Click the **Ports** tab in the bottom panel to find your public URLs. Remember to set Port 8000 to **Public**!
+
 
 ---
 
@@ -100,43 +112,19 @@ The server will automatically generate the audio via Kokoro-ONNX, align captions
 
 ## 🤖 Automating with n8n
 
-You can automate video generation by connecting an **n8n** workflow to this FastAPI backend. An example workflow file (`n8n_workflow.json`) is included in this repository.
+The project now includes **n8n out-of-the-box** in the Docker container!
 
-### 1. Installing & Running n8n
-If you don't have n8n installed, you can run it easily using Docker or npm:
+1.  **Open n8n:** Go to [http://localhost:5678](http://localhost:5678).
+2.  **Import Workflow:** Import the `n8n_workflow.json` file from the root directory.
+3.  **Internal Connection:** For the **HTTP Request** node, use this internal URL:
+    `http://video-generator:8000/generate-ghibli-video`
+    *(No need for host.docker.internal or local IPs!)*
 
-**Option A: Using npm (Node.js)**
-```bash
-npx n8n
-```
+## ⚡ Asynchronous API (Polling)
 
-**Option B: Using Docker**
-```bash
-docker run -it --rm --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n docker.n8n.io/n8n/n8n
-```
-n8n will be available at [http://localhost:5678](http://localhost:5678).
+Since video rendering takes 4–8 minutes, the API is **Asynchronous** to prevent timeouts.
 
-### 2. Importing the Workflow
-1. Open n8n in your browser.
-2. Go to **Workflows** -> **Add Workflow**.
-3. Click the menu in the top right and select **Import from File**.
-4. Select the `n8n_workflow.json` file from this repository.
+1.  **POST `/generate-ghibli-video`**: Starts the job and immediately returns a `job_id`.
+2.  **GET `/video-status/{job_id}`**: Returns the current status (`pending`, `processing`, `success`, or `failed`).
+3.  **Static Serving**: Once successful, videos can be accessed at `http://localhost:8000/videos/{filename}`.
 
-### 3. Connecting n8n to FastAPI
-The workflow uses an **HTTP Request** node to send the script to your FastAPI server (`app_v3.py`). Depending on how you run n8n, you might need to adjust the URL in the HTTP Request node:
-
-- **If running n8n via npm:** The default `http://localhost:8000/generate-ghibli-video` or `http://127.0.0.1:8000/generate-ghibli-video` will work perfectly.
-- **If running n8n via Docker (Windows/Mac):** Docker containers have their own isolated network. You must change the URL in the HTTP node to:
-  ```text
-  http://host.docker.internal:8000/generate-ghibli-video
-  ```
-- **If `host.docker.internal` fails (or you are on Linux without extra config):** You will need to use your machine's actual local IP address (e.g., `192.168.1.171`).
-  1. Find your IP address:
-     - Windows: Open Command Prompt/PowerShell and type `ipconfig` (look for IPv4 Address).
-     - Mac/Linux: Open Terminal and type `ifconfig` or `hostname -I`.
-  2. Update the HTTP Request node URL to use that IP:
-     ```text
-     http://YOUR_IP_ADDRESS:8000/generate-ghibli-video
-     ```
-
-Once configured, simply trigger the workflow, fill out the form with your script (using double spacing `\n\n` between scenes), select a voice, and n8n will automatically formulate the JSON and send it to your video generator!

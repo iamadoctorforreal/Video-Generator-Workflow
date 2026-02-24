@@ -1,5 +1,5 @@
 {
-  "name": "Working Video Generation n8n Workflow",
+  "name": "Working Video Generation n8n Workflow Form Edit And Github Codespaces URL",
   "nodes": [
     {
       "parameters": {
@@ -62,12 +62,12 @@
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 2.5,
       "position": [
-        304,
-        336
+        -624,
+        -144
       ],
-      "id": "0f38e718-91b7-4ae3-b5a0-a873e7ce1eca",
+      "id": "c84f2ed5-147f-48e2-9362-39a33f63794f",
       "name": "Upload Voice Over Script Ensure Double Space In between Scenes And Select Voice",
-      "webhookId": "753738da-f07f-4f5d-a594-0d571b6d8614"
+      "webhookId": "d7755c81-0b96-4a36-a3a3-d0315618c5ca"
     },
     {
       "parameters": {
@@ -76,16 +76,16 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        864,
-        336
+        -64,
+        -144
       ],
-      "id": "4957f695-baf6-4637-98a9-af2a3ef0e524",
+      "id": "0480a535-1070-4a93-9cd6-326ee3987093",
       "name": "Formats Output For Scenes And Voice"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://192.168.1.171:8000/generate-ghibli-video",
+        "url": "http://video-generator:8000/generate-ghibli-video",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
@@ -96,28 +96,86 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1488,
-        336
+        560,
+        -144
       ],
-      "id": "1fb78f1f-19db-4b5f-a298-8607bf9db392",
+      "id": "8a6c899c-0431-4979-85d1-c79bf23b112f",
       "name": "Send Video Generation Request To FastAPI of app_v3.py"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        -144
+      ],
+      "id": "697ecf06-7beb-4166-879f-91b86e5b152e",
+      "name": "Wait",
+      "webhookId": "eac8df99-c55f-4fd6-9908-b6465819da42"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7deeb833-1d2a-4e21-bab5-abb2173f7710",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -144
+      ],
+      "id": "9f1aa170-1d4d-4aef-acc8-7562d7d0d1d6",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=http://video-generator:8000/video-status/{{ $node[\"Send Video Generation Request To FastAPI of app_v3.py\"].json[\"job_id\"] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n"
+            },
+            {
+              "name": "bypass-tunnel-reminder",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        976,
+        -144
+      ],
+      "id": "5aadde87-a556-4bbd-8a2d-fe29f561bfd9",
+      "name": "Get Status"
     }
   ],
-  "pinData": {
-    "Upload Voice Over Script Ensure Double Space In between Scenes And Select Voice": [
-      {
-        "json": {
-          "Script (one line per scene)": "Ramadan is here, and every year we make the same quiet promise to ourselves: this Ramadan will be different. But different how?\r\n\r\nWhat if this Ramadan was more than rituals, more than hunger, more than schedules and exhaustion disguised as productivity, but something deeper?\r\n\r\nWhat if it was a sacred rehabilitation center for your entire being, not just fasting from food but resetting your heart, rebuilding your soul, rewiring your mind, and retraining your body?\r\n\r\nThis year we begin a four-week journey called Ramadan Reset: Aligning Your Heart, Soul, Mind and Body, not another reminder series, but a guided transformation.\r\n\r\nWeek One is the heart, where we release grudges, heal silent pain, and remove spiritual rust that weighs us down.\r\n\r\nWeek Two is the soul, where we move from performance to presence and from routine to real relationship with Allah.\r\n\r\nWeek Three is the mind, where we challenge the voice that says I am not enough and rewrite the internal scripts that keep us spiritually stuck.\r\n\r\nWeek Four is the body, where we honor fasting as discipline, balance, and mastery, not just endurance.\r\n\r\nBecause Ramadan is not meant to exhaust you, it is meant to refine you, so do not just scroll through Ramadan, journey through it.\r\n\r\nFollow the blog, turn on notifications, and walk this path with us, because this Ramadan we are not just fasting, we are resetting. \ud83c\udf19",
-          "voice": "af_sarah",
-          "submittedAt": "2026-02-19T21:42:53.974+01:00",
-          "formMode": "test"
-        },
-        "pairedItem": {
-          "item": 0
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "connections": {
     "Upload Voice Over Script Ensure Double Space In between Scenes And Select Voice": {
       "main": [
@@ -140,21 +198,62 @@
           }
         ]
       ]
+    },
+    "Send Video Generation Request To FastAPI of app_v3.py": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Status": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": false,
-    "timeSavedMode": "fixed",
-    "timezone": "Africa/Lagos",
-    "callerPolicy": "workflowsFromSameOwner"
+    "availableInMCP": false
   },
-  "versionId": "b7b24ed7-df63-4d81-9b32-3b58bb6554ee",
+  "versionId": "e6157dcc-9c94-4193-9368-79cad9406671",
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "539fedbca511a35f7af6bfe2828633307fcd9a0d163a852c26e758923dbeb21c"
   },
-  "id": "n3YcK3hl2agtVliW",
+  "id": "Ctzhwe5iHY3x7Hp8AMSVh",
   "tags": []
 }

@@ -17,6 +17,8 @@ from moviepy import (
     TextClip, CompositeVideoClip, ColorClip, vfx, CompositeAudioClip, afx
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 import platform
 
@@ -41,6 +43,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve generated videos statically (so the UI can play them)
+app.mount("/videos", StaticFiles(directory="."), name="videos")
 
 # Initialize Whisper (Tiny is fastest for CPU)
 whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
@@ -296,6 +301,10 @@ async def get_status(job_id: str):
     if response["status"] in ["processing", "pending"]:
         response["elapsed_seconds"] = round(time.time() - response["started_at"], 2)
     return response
+
+@app.get("/")
+async def serve_ui():
+    return FileResponse("index.html")
 
 if __name__ == "__main__":
     import uvicorn
