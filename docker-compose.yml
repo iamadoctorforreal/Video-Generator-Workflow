@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   video-generator:
     build: .
@@ -13,7 +11,7 @@ services:
     restart: unless-stopped
 
   n8n:
-    image: docker.n8n.io/n8n/n8n
+    image: n8nio/n8n:latest
     container_name: kokoro-n8n
     ports:
       - "5678:5678"
