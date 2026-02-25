@@ -8,7 +8,8 @@ import numpy as np
 from faster_whisper import WhisperModel
 import gc
 import soundfile as sf
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+import shutil
 from pydantic import BaseModel
 #from kokoro import KPipeline
 from kokoro_onnx import Kokoro
@@ -46,6 +47,33 @@ app.add_middleware(
 
 # Serve generated videos statically (so the UI can play them)
 app.mount("/videos", StaticFiles(directory="."), name="videos")
+
+# Image Directories
+UPLOAD_DIR = "temp_uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs("images", exist_ok=True)
+
+# Mount media folders for the UI to preview
+app.mount("/static/images", StaticFiles(directory="images"), name="static_images")
+app.mount("/static/uploads", StaticFiles(directory=UPLOAD_DIR), name="static_uploads")
+
+@app.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": file.filename, "url": f"/static/uploads/{file.filename}"}
+
+@app.get("/list-images")
+async def list_images():
+    def get_files(folder, path_prefix):
+        return [{"name": f, "url": f"{path_prefix}/{f}"} for f in os.listdir(folder) 
+                if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    
+    return {
+        "default": get_files("images", "/static/images"),
+        "uploads": get_files(UPLOAD_DIR, "/static/uploads")
+    }
 
 # Initialize Whisper (Tiny is fastest for CPU)
 whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
@@ -231,7 +259,20 @@ def generate_video_task(job_id: str, request: VideoRequest):
                 audio_clip = AudioFileClip(audio_path)
              
             word_data = get_word_timestamps(audio_path, script_text=scene.text)
-            media_path = os.path.join(BASE_MEDIA_PATH, media_file) if media_file else None
+            
+            # Find the media file in either 'images' or 'temp_uploads'
+            media_path = None
+            if media_file:
+                # Check default images folder
+                p1 = os.path.join(BASE_MEDIA_PATH, media_file)
+                # Check temp uploads folder
+                p2 = os.path.join(UPLOAD_DIR, media_file)
+                
+                if os.path.exists(p1):
+                    media_path = p1
+                elif os.path.exists(p2):
+                    media_path = p2
+
             TARGET_W = 720 if request.orientation == "portrait" else 1280
             TARGET_H = 1280 if request.orientation == "portrait" else 720
 

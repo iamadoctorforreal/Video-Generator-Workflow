@@ -1,20 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kokoro Video Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Kokoro Studio | The Storyteller</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
+            /* Dark Theme (Default) */
+            --bg: #0f1014;
+            --surface: #1a1c23;
+            --surface-hover: #242731;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
             --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --bg-dark: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
+            --primary-light: #818cf8;
             --accent: #10b981;
             --danger: #ef4444;
+            --glass: rgba(26, 28, 35, 0.8);
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-hover: #f1f5f9;
+            --border: rgba(0, 0, 0, 0.08);
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --accent: #059669;
+            --danger: #dc2626;
+            --glass: rgba(255, 255, 255, 0.82);
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
         }
 
         * {
@@ -24,540 +47,796 @@
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background: radial-gradient(circle at top left, #1e1b4b, #0f172a);
-            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
             overflow-x: hidden;
         }
 
-        .glass-container {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            width: 100%;
-            max-width: 900px;
-            padding: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.6s ease-out;
+        /* --- Layout --- */
+        .app-shell {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 600;
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-        }
-
-        p.subtitle {
-            color: var(--text-dim);
-            font-size: 1.1rem;
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .scene-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-bottom: 30px;
-        }
-
-        .scene-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 20px;
-            position: relative;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .scene-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .scene-header {
+        nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 60px;
         }
 
-        textarea {
-            width: 100%;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            color: white;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 80px;
-            margin-bottom: 12px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        textarea:focus {
-            border-color: var(--primary);
-        }
-
-        .scene-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
             gap: 12px;
         }
 
-        input[type="text"], select {
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
             border-radius: 8px;
-            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
             color: white;
-            outline: none;
+            font-size: 1.2rem;
         }
 
-        .btn-remove {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            padding: 4px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .btn-remove:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-add {
-            background: rgba(99, 102, 241, 0.1);
-            color: #818cf8;
-            border: 1px dashed rgba(99, 102, 241, 0.4);
-            padding: 12px;
+        .theme-toggle {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 10px;
             border-radius: 12px;
             cursor: pointer;
-            text-align: center;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
             transition: all 0.2s;
-            margin-bottom: 30px;
         }
 
-        .btn-add:hover {
-            background: rgba(99, 102, 241, 0.2);
-            border-style: solid;
+        .theme-toggle:hover {
+            border-color: var(--primary);
         }
 
-        .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        /* --- Stages --- */
+        .stage {
+            display: none;
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .stage.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Stage 1: Write --- */
+        .hero {
+            text-align: center;
             margin-bottom: 40px;
         }
 
-        .setting-item {
+        .hero h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .editor-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .editor-container::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(135deg, var(--primary), transparent, var(--primary));
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        #mainScript {
+            width: 100%;
+            height: 350px;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1.15rem;
+            resize: none;
+            outline: none;
+            line-height: 1.8;
+        }
+
+        .editor-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 12px 28px;
+            border-radius: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--surface-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+        }
+
+        /* --- Stage 2: Refine --- */
+        .scene-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .scene-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .scene-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow);
+        }
+
+        .scene-count {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary-light);
+            margin-bottom: 4px;
+        }
+
+        .scene-text {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            min-height: 80px;
+        }
+
+        .image-picker {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg);
+            border: 2px dashed var(--border);
+            aspect-ratio: 16/9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .image-picker:hover {
+            border-color: var(--primary-light);
+            background: var(--surface-hover);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+        }
+
+        .image-picker span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .image-picker i {
+            font-size: 1.5rem;
+        }
+
+        /* --- Global Settings --- */
+        .global-settings {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .setting-field {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        label {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-        }
-
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-
-        .btn-generate {
-            width: 100%;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
-            color: white;
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            font-size: 1.1rem;
+        .setting-field label {
+            font-size: 0.8rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .setting-field select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 10px;
+            color: var(--text);
+            outline: none;
+        }
+
+        /* --- Stage 3: Generating --- */
+        .generating-status {
+            text-align: center;
+            padding: 60px 0;
+        }
+
+        .orbit-loader {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 40px;
+            position: relative;
+        }
+
+        .orbit {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+        }
+
+        .planet {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            top: -6px;
+            left: 50%;
+            margin-left: -6px;
+            box-shadow: 0 0 15px var(--primary);
+            animation: rotate 2s infinite linear;
+            transform-origin: 50% 56px;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar-wrap {
+            width: 100%;
+            max-width: 500px;
+            height: 6px;
+            background: var(--surface);
+            border-radius: 3px;
+            margin: 30px auto;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8b5cf6);
+            transition: width 0.5s;
+        }
+
+        /* --- Stage 4: Result --- */
+        .result-stage {
+            text-align: center;
+        }
+
+        #videoResult {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 24px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            margin-bottom: 40px;
+        }
+
+        .actions {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 12px;
+            gap: 20px;
         }
 
-        .btn-generate:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-generate:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Status Overlay */
-        .status-overlay {
+        /* --- Image Gallery Modal --- */
+        .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
             display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-            text-align: center;
+            padding: 40px;
+            backdrop-filter: blur(10px);
         }
 
-        .loader {
-            width: 60px;
-            height: 60px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s infinite linear;
-            margin-bottom: 24px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .progress-container {
-            width: 100%;
-            max-width: 400px;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            width: 0%;
+        .modal-content {
+            background: var(--surface);
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 24px;
+            padding: 30px;
             height: 100%;
-            background: var(--primary);
-            transition: width 0.3s;
+            overflow-y: auto;
         }
 
-        .status-text {
-            font-size: 1.2rem;
-            margin-bottom: 8px;
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
         }
 
-        .status-sub {
-            color: var(--text-dim);
-        }
-
-        .result-container {
-            display: none;
-            margin-top: 30px;
-            text-align: center;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        video {
-            width: 100%;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-        }
-
-        .btn-download {
-            background: var(--accent);
-            color: white;
-            padding: 12px 24px;
+        .gallery-item {
+            aspect-ratio: 1;
             border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: transform 0.2s;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
         }
 
-        .btn-download:hover {
+        .gallery-item:hover {
             transform: scale(1.05);
         }
 
-        @media (max-width: 600px) {
-            .glass-container {
-                padding: 24px;
+        .gallery-item.selected {
+            border-color: var(--primary);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            padding: 30px;
+            text-align: center;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 1.4rem;
             }
-            .scene-controls {
-                grid-template-columns: 1fr;
+
+            .hero h2 {
+                font-size: 1.8rem;
+            }
+
+            .global-settings {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
 </head>
+
 <body>
-    <div class="glass-container">
-        <header>
-            <h1>Kokoro Studio</h1>
-            <p class="subtitle">AI-Powered Cinematic Video Generator</p>
-        </header>
 
-        <div class="section-title">
-            <span>🎬</span> Story Scenes
-        </div>
-
-        <div id="sceneContainer" class="scene-container">
-            <!-- Scenes appear here -->
-        </div>
-
-        <div class="btn-add" onclick="addScene()">
-            + Add New Scene
-        </div>
-
-        <div class="section-title">
-            <span>⚙️</span> Generation Settings
-        </div>
-
-        <div class="settings-grid">
-            <div class="setting-item">
-                <label>Narrative Voice</label>
-                <select id="voice">
-                    <option value="af_bella">Bella (Female)</option>
-                    <option value="af_sarah">Sarah (Female)</option>
-                    <option value="am_adam">Adam (Male)</option>
-                    <option value="am_michael">Michael (Male)</option>
-                </select>
+    <div class="app-shell">
+        <nav>
+            <div class="logo">
+                <div class="logo-icon">K</div>
+                Kokoro Studio
             </div>
-            <div class="setting-item">
-                <label>Video Orientation</label>
-                <select id="orientation">
-                    <option value="portrait">Portrait (9:16)</option>
-                    <option value="landscape">Landscape (16:9)</option>
-                </select>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span>
+                <span id="themeName">Dark</span>
+            </button>
+        </nav>
+
+        <!-- STAGE 1: WRITE -->
+        <div id="stage1" class="stage active">
+            <div class="hero">
+                <h2>Start with a vision.</h2>
+                <p>Paste your script below. Use double-spaces to mark scene changes.</p>
             </div>
-            <div class="setting-item">
-                <label>Caption Position</label>
-                <select id="captionPosition">
-                    <option value="bottom">Bottom</option>
-                    <option value="center">Center</option>
-                    <option value="top">Top</option>
-                </select>
+            <div class="editor-container">
+                <textarea id="mainScript" placeholder="Once upon a time... (double enter for next scene)"></textarea>
+                <div class="editor-footer">
+                    <div class="hint">Shift + Enter for small gaps, Double Enter for Scenes.</div>
+                    <button class="btn btn-primary" onclick="goToRefine()">Next: Refine Story ✨</button>
+                </div>
             </div>
         </div>
 
-        <div class="checkbox-group mb-5">
-            <label class="checkbox-item">
-                <input type="checkbox" id="addCaptions" checked> Add Captions
-            </label>
-            <label class="checkbox-item">
-                <input type="checkbox" id="addEffects" checked> Visual Effects
-            </label>
+        <!-- STAGE 2: REFINE -->
+        <div id="stage2" class="stage">
+            <div class="hero">
+                <h2>Refine your Storyboard</h2>
+                <p>Edit text and match images for each segment.</p>
+            </div>
+
+            <div id="sceneGrid" class="scene-grid">
+                <!-- Scene Cards will be injected here -->
+            </div>
+
+            <div class="global-settings">
+                <div class="setting-field">
+                    <label>Narrative Voice</label>
+                    <select id="v_voice">
+                        <option value="af_bella">Bella (Standard)</option>
+                        <option value="af_sarah">Sarah (Expressive)</option>
+                        <option value="am_adam">Adam (Deep)</option>
+                        <option value="am_michael">Michael (Warm)</option>
+                    </select>
+                </div>
+                <div class="setting-field">
+                    <label>Orientation</label>
+                    <select id="v_orient">
+                        <option value="portrait">Portrait (9:16)</option>
+                        <option value="landscape">Landscape (16:9)</option>
+                    </select>
+                </div>
+                <div class="setting-field">
+                    <label>Captions</label>
+                    <select id="v_capt">
+                        <option value="bottom">Bottom</option>
+                        <option value="center">Center</option>
+                        <option value="top">Top</option>
+                        <option value="off">Off</option>
+                    </select>
+                </div>
+                <div class="setting-field">
+                    <label>VFX Style</label>
+                    <select id="v_vfx">
+                        <option value="on">Cinematic (Pan/Zoom)</option>
+                        <option value="off">Static</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+                <button class="btn btn-secondary" onclick="goToWrite()">← Back to Script</button>
+                <button class="btn btn-primary" onclick="startProduction()">Launch Production 🚀</button>
+            </div>
         </div>
 
-        <button id="generateBtn" class="btn-generate" onclick="startGeneration()">
-            Launch Production
-        </button>
+        <!-- STAGE 3: GENERATING -->
+        <div id="stage3" class="stage">
+            <div class="generating-status">
+                <div class="orbit-loader">
+                    <div class="orbit"></div>
+                    <div class="planet"></div>
+                </div>
+                <h2 id="statusTitle">Weavering your tale...</h2>
+                <p id="statusMsg">Calculating trajectories and mixing sounds.</p>
+                <div class="progress-bar-wrap">
+                    <div id="progressBar"></div>
+                </div>
+                <p id="elapsedTime" class="hint">Started just now</p>
+            </div>
+        </div>
 
-        <div id="resultArea" class="result-container">
-            <h3>✨ Your Masterpiece is Ready</h3>
-            <video id="videoPreview" controls></video>
-            <a id="downloadLink" class="btn-download" href="#" download>
-                📥 Download Video
-            </a>
+        <!-- STAGE 4: RESULT -->
+        <div id="stage4" class="stage result-stage">
+            <div class="hero">
+                <h2>The story is ready.</h2>
+                <p>Your cinematic vision is now reality.</p>
+            </div>
+            <video id="videoResult" controls></video>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="resetApp()">Create Another</button>
+                <a id="downloadBtn" class="btn btn-primary" href="#" download>📥 Download Masterpiece</a>
+            </div>
         </div>
     </div>
 
-    <!-- Status Overlay -->
-    <div id="statusOverlay" class="status-overlay">
-        <div class="loader"></div>
-        <div id="statusMsg" class="status-text">Starting generation...</div>
-        <div id="statusElapsed" class="status-sub">Elapsed: 0s</div>
-        <div class="progress-container">
-            <div id="progressBar" class="progress-bar"></div>
+    <!-- Image Selection Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Select Backdrop</h3>
+                <button class="btn-secondary" style="padding: 5px 12px;" onclick="closeModal()">Close</button>
+            </div>
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleUpload(event)">
+                <p>Click to upload your own Image</p>
+            </div>
+            <div class="hint">Available Assets:</div>
+            <div id="galleryGrid" class="gallery-grid">
+                <!-- Images will be listed here -->
+            </div>
         </div>
-        <p style="color: #64748b; font-size: 0.9rem;">
-            Rendering takes about 4-6 minutes for a full story.
-        </p>
     </div>
 
     <script>
-        let sceneCount = 0;
+        let currentStage = 1;
+        let scenes = [];
+        let activeSceneIdx = null;
+        let imageLibrary = { default: [], uploads: [] };
 
-        function addScene(text = '', media = 'detect') {
-            sceneCount++;
-            const container = document.getElementById('sceneContainer');
-            const div = document.createElement('div');
-            div.className = 'scene-card';
-            div.id = `scene-${sceneCount}`;
-            div.innerHTML = `
-                <div class="scene-header">
-                    <label>Scene ${sceneCount}</label>
-                    <button class="btn-remove" onclick="removeScene(${sceneCount})">Remove</button>
-                </div>
-                <textarea placeholder="Tell your story here...">${text}</textarea>
-                <div class="scene-controls">
-                    <div class="setting-item">
-                        <label>Image Source</label>
-                        <input type="text" value="${media}" placeholder="Enter filename or 'detect'">
-                    </div>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            document.getElementById('themeIcon').innerText = next === 'dark' ? '🌙' : '☀️';
+            document.getElementById('themeName').innerText = next.charAt(0).toUpperCase() + next.slice(1);
+        }
+
+        function showStage(n) {
+            document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+            document.getElementById(`stage${n}`).classList.add('active');
+            currentStage = n;
+            window.scrollTo(0, 0);
+        }
+
+        function goToWrite() { showStage(1); }
+
+        function goToRefine() {
+            const text = document.getElementById('mainScript').value;
+            if (!text.trim()) return alert("Write something first!");
+
+            // Logical split by empty lines
+            scenes = text.split(/\r?\n\r?\n/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0)
+                .map(s => ({ text: s, media: 'detect' }));
+
+            renderScenes();
+            showStage(2);
+            loadGallery();
+        }
+
+        function renderScenes() {
+            const grid = document.getElementById('sceneGrid');
+            grid.innerHTML = '';
+            scenes.forEach((s, idx) => {
+                const card = document.createElement('div');
+                card.className = 'scene-card';
+                card.innerHTML = `
+                <div class="scene-count">Scene ${idx + 1}</div>
+                <textarea class="scene-text" onchange="updateSceneText(${idx}, this.value)">${s.text}</textarea>
+                <div class="image-picker" onclick="openModal(${idx})">
+                    <img id="prev-${idx}" class="image-preview" src="${getImageUrl(s.media)}" style="${s.media !== 'detect' ? 'display:block;' : ''}">
+                    <i id="icon-${idx}" style="${s.media !== 'detect' ? 'display:none;' : ''}">📸</i>
+                    <span id="label-${idx}">${s.media === 'detect' ? 'Auto-detecting' : s.media}</span>
                 </div>
             `;
-            container.appendChild(div);
-        }
-
-        function removeScene(id) {
-            const el = document.getElementById(`scene-${id}`);
-            if (el) el.remove();
-        }
-
-        async function startGeneration() {
-            const scenes = [];
-            document.querySelectorAll('.scene-card').forEach(card => {
-                scenes.push({
-                    text: card.querySelector('textarea').value,
-                    media_name: card.querySelector('input').value || 'detect'
-                });
+                grid.appendChild(card);
             });
+        }
 
-            if (scenes.length === 0) {
-                alert("Please add at least one scene!");
-                return;
-            }
+        function getImageUrl(media) {
+            if (media === 'detect') return '';
+            // Look in both default and uploads
+            const found = [...imageLibrary.default, ...imageLibrary.uploads].find(i => i.name === media);
+            return found ? found.url : '';
+        }
 
+        function updateSceneText(idx, val) {
+            scenes[idx].text = val;
+        }
+
+        async function loadGallery() {
+            try {
+                const res = await fetch('/list-images');
+                imageLibrary = await res.json();
+                updateGalleryUI();
+            } catch (e) { console.error("Gallery failed", e); }
+        }
+
+        function updateGalleryUI() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+
+            const allImages = [...imageLibrary.default, ...imageLibrary.uploads];
+            allImages.forEach(img => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.innerHTML = `<img src="${img.url}" alt="${img.name}">`;
+                div.onclick = () => selectImage(img.name);
+                grid.appendChild(div);
+            });
+        }
+
+        function openModal(idx) {
+            activeSceneIdx = idx;
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        function selectImage(name) {
+            scenes[activeSceneIdx].media = name;
+            closeModal();
+            renderScenes(); // Quick redraw
+        }
+
+        async function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/upload-image', { method: 'POST', body: formData });
+                const data = await res.json();
+                await loadGallery(); // Refresh library
+                selectImage(data.filename);
+            } catch (err) { alert("Upload failed"); }
+        }
+
+        async function startProduction() {
             const request = {
-                scenes: scenes,
-                voice: document.getElementById('voice').value,
-                orientation: document.getElementById('orientation').value,
-                caption_position: document.getElementById('captionPosition').value,
-                add_captions: document.getElementById('addCaptions').checked,
-                add_effects: document.getElementById('addEffects').checked
+                scenes: scenes.map(s => ({ text: s.text, media_name: s.media })),
+                voice: document.getElementById('v_voice').value,
+                orientation: document.getElementById('v_orient').value,
+                caption_position: document.getElementById('v_capt').value === 'off' ? 'bottom' : document.getElementById('v_capt').value,
+                add_captions: document.getElementById('v_capt').value !== 'off',
+                add_effects: document.getElementById('v_vfx').value === 'on'
             };
 
-            const btn = document.getElementById('generateBtn');
-            const overlay = document.getElementById('statusOverlay');
-            
+            showStage(3);
             try {
-                btn.disabled = true;
-                overlay.style.display = 'flex';
-
-                const response = await fetch('/generate-ghibli-video', {
+                const res = await fetch('/generate-ghibli-video', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(request)
                 });
-
-                const data = await response.json();
-                if (data.job_id) {
-                    pollStatus(data.job_id);
-                } else {
-                    throw new Error("Missing Job ID");
-                }
-            } catch (err) {
-                alert("Error starting generation: " + err.message);
-                overlay.style.display = 'none';
-                btn.disabled = false;
+                const data = await res.json();
+                if (data.job_id) poll(data.job_id);
+            } catch (e) {
+                alert("Fail");
+                showStage(2);
             }
         }
 
-        async function pollStatus(jobId) {
-            const overlay = document.getElementById('statusOverlay');
-            const statusMsg = document.getElementById('statusMsg');
-            const statusElapsed = document.getElementById('statusElapsed');
-            const progressBar = document.getElementById('progressBar');
-
+        function poll(id) {
             const interval = setInterval(async () => {
-                try {
-                    const res = await fetch(`/video-status/${jobId}`);
-                    const data = await res.json();
+                const res = await fetch(`/video-status/${id}`);
+                const data = await res.json();
 
-                    statusElapsed.innerText = `Elapsed: ${Math.round(data.elapsed_seconds || 0)}s`;
-                    
-                    if (data.status === 'success') {
-                        clearInterval(interval);
-                        showResult(data.filename);
-                    } else if (data.status === 'failed') {
-                        clearInterval(interval);
-                        alert("Generation Failed: " + data.error);
-                        overlay.style.display = 'none';
-                        document.getElementById('generateBtn').disabled = false;
-                    } else {
-                        statusMsg.innerText = data.status.charAt(0).toUpperCase() + data.status.slice(1) + "...";
-                        // Simulate progress since we don't have true percentages yet
-                        let progress = Math.min(95, (data.elapsed_seconds / 300) * 100);
-                        progressBar.style.width = progress + '%';
-                    }
-                } catch (err) {
-                    console.error("Polling error:", err);
+                document.getElementById('elapsedTime').innerText = `Time elapsed: ${Math.round(data.elapsed_seconds || 0)}s`;
+
+                if (data.status === 'success') {
+                    clearInterval(interval);
+                    finish(data.filename);
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    alert("Error: " + data.error);
+                    showStage(2);
+                } else {
+                    let prog = Math.min(98, (data.elapsed_seconds / 300) * 100);
+                    document.getElementById('progressBar').style.width = prog + '%';
                 }
-            }, 5000);
+            }, 4000);
         }
 
-        function showResult(filename) {
-            const overlay = document.getElementById('statusOverlay');
-            const resultArea = document.getElementById('resultArea');
-            const video = document.getElementById('videoPreview');
-            const download = document.getElementById('downloadLink');
-
-            overlay.style.display = 'none';
-            resultArea.style.display = 'block';
-            
-            // Assuming we serve static files from the root or a 'videos' folder
-            const videoUrl = `/videos/${filename}`;
-            video.src = videoUrl;
-            download.href = videoUrl;
-            
-            document.getElementById('generateBtn').disabled = false;
-            resultArea.scrollIntoView({ behavior: 'smooth' });
+        function finish(filename) {
+            const url = `/videos/${filename}`;
+            const vid = document.getElementById('videoResult');
+            vid.src = url;
+            document.getElementById('downloadBtn').href = url;
+            showStage(4);
         }
 
-        // Add 3 default scenes
-        window.onload = () => {
-            addScene("Once upon a time, in a floating village above the clouds...", "detect");
-            addScene("The people lived in harmony with the giant spirits of the wind.", "detect");
-            addScene("But one day, a young explorer found a map to the ancient world below.", "detect");
-        };
+        function resetApp() {
+            document.getElementById('mainScript').value = '';
+            showStage(1);
+        }
+
+        // Close modal on outside click
+        window.onclick = (e) => {
+            if (e.target.id === 'imageModal') closeModal();
+        }
     </script>
+
 </body>
+
 </html>
