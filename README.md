@@ -4,17 +4,25 @@ This project is a dynamic, automated landscape and portrait video generation scr
 
 The script supports both **Landscape** and **Portrait** orientations, with smart caption wrapping that automatically adjusts based on the canvas width to ensure text never overflows.
 
-## � Running with Docker (Recommended)
+This project uses **Docker Compose** to run both the Video API and n8n. You can either build it yourselves or use our official pre-built image for the fastest setup.
 
-This project uses **Docker Compose** to run both the Video API and n8n simultaneously in an isolated environment. This is the fastest way to get started.
+### 💨 Easy Setup (Docker Hub)
+The fastest way to get started without building anything:
 
-### 1. Prerequisites
+1. **Download this repo** (specifically the `docker-compose.yml` and `media` folders).
+2. **Download Models**: Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder.
+3. **Run**:
+   ```bash
+   docker-compose up
+   ```
+
+### 🐳 Build from Source (Local)
+If you want to modify the code or build it yourself:
 - **Docker Desktop** installed and running.
 - **Model Files**: DOWNLOAD `kokoro-v1.0.onnx` and `voices-v1.0.bin` (links below) and place them in the root folder.
 - **Media**: Ensure you have some images in the `images/` folder and a `bg_music.mp3` file.
 
 ### 2. Start the Services
-Run this command in your terminal:
 ```bash
 docker-compose up --build
 ```
@@ -127,4 +135,13 @@ Since video rendering takes 4–8 minutes, the API is **Asynchronous** to preven
 1.  **POST `/generate-ghibli-video`**: Starts the job and immediately returns a `job_id`.
 2.  **GET `/video-status/{job_id}`**: Returns the current status (`pending`, `processing`, `success`, or `failed`).
 3.  **Static Serving**: Once successful, videos can be accessed at `http://localhost:8000/videos/{filename}`.
+
+## 📦 Docker Hub Image
+The official image is hosted at:
+[okayna/video-generator-workflow](https://hub.docker.com/repository/docker/okayna/video-generator-workflow)
+
+To pull it manually:
+```bash
+docker pull okayna/video-generator-workflow
+```
 
