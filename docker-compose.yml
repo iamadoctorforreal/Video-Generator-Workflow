@@ -1,6 +1,6 @@
 services:
   video-generator:
-    image: okayna/video-generator-workflow:latest
+    image: okayna/video-generator-workflow:v1
     container_name: kokoro-video-api
     ports:
       - "8000:8000"

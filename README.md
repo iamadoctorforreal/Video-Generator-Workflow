@@ -1,39 +1,33 @@
-# Kokoro Video Generator
+# Kokoro Video Generator: The Storyteller Suite 🎬✨
 
-This project is a dynamic, automated landscape and portrait video generation script using the **Kokoro-ONNX** TTS engine (which avoids the dependency nightmare and `numpy` incompatibility issues of the standard Kokoro library), `faster-whisper` for word-level sync, and `MoviePy` for video compositing and captions.
+This is a premium, automated video generation platform. It transforms simple voiceover scripts into cinematic videos using the **Kokoro-ONNX** TTS engine, `faster-whisper` for synchronization, and a custom **Storyteller Studio** UI.
 
-The script supports both **Landscape** and **Portrait** orientations, with smart caption wrapping that automatically adjusts based on the canvas width to ensure text never overflows.
+### 🎭 Three Powerful Workspaces
+1.  **Studio Mode**: The classic, centered glassmorphic layout for quick visual storytelling.
+2.  **Professional Mode**: A sidebar-driven dashboard for efficient project management.
+3.  **canvas Mode**: A writing-focused focus space for "script-first" creators.
 
-This project uses **Docker Compose** to run both the Video API and n8n. You can either build it yourselves or use our official pre-built image for the fastest setup.
+---
 
-### 💨 Easy Setup (Docker Hub)
-The fastest way to get started without building anything:
+### 🚀 Easy Setup (Docker Hub)
+The fastest way to get the full **Storyteller Suite** up and running:
 
-1. **Download this repo** (specifically the `docker-compose.yml` and `media` folders).
-2. **Download Models**: Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder.
-3. **Run**:
+1. **Clone the Repo**:
    ```bash
-   docker-compose up
+   git clone https://github.com/iamadoctorforreal/kokoro.git
+   cd kokoro
    ```
+2. **Download Models**: Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder.
+3. **Run the Suite**:
+   ```bash
+   docker-compose down && docker-compose up --build
+   ```
+   *(This pulls the official `okayna/video-generator-workflow:v1` image automatically.)*
 
-### 🐳 Build from Source (Local)
-If you want to modify the code or build it yourself:
-- **Docker Desktop** installed and running.
-- **Model Files**: DOWNLOAD `kokoro-v1.0.onnx` and `voices-v1.0.bin` (links below) and place them in the root folder.
-- **Media**: Ensure you have some images in the `images/` folder and a `bg_music.mp3` file.
+### 🎨 Access the Studio
+Once running, visit **[http://localhost:8000](http://localhost:8000)** to start creating.
 
-### 2. Start the Services
-```bash
-docker-compose up --build
-```
-
-### 3. Access your Tools
-Once the containers are running:
-- **🎨 Web Studio (GUI):** Go to [http://localhost:8000](http://localhost:8000) (Use this for manual video creation).
-- **🤖 n8n Automation:** Go to [http://localhost:5678](http://localhost:5678) (Use this for automated workflows).
-
-> [!TIP]
-> **GitHub Codespaces Users**: If you are in a Codespace, GitHub will automatically "forward" these ports. Click the **Ports** tab in the bottom panel to find your public URLs. Remember to set Port 8000 to **Public**!
+---
 
 
 ---
