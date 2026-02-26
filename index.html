@@ -1,43 +1,61 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-mode="studio">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kokoro Studio | The Storyteller</title>
+    <!-- Fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"
         rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind for Professional Mode -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ["class", '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: {
+                        "p-primary": "#13a4ec",
+                        "p-bg": "#0f1014",
+                        "p-surface": "#1a1c23",
+                        "p-border": "rgba(255, 255, 255, 0.08)"
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            [data-mode="studio"], [data-mode="storyteller"] {
+                @apply bg-[#0f1014] text-slate-100;
+            }
+        }
+        /* Mode-specific structural hiding/showing */
+        [data-mode="professional"] .studio-only, [data-mode="storyteller"] .studio-only { display: none !important; }
+        [data-mode="studio"] .prof-only, [data-mode="storyteller"] .prof-only { display: none !important; }
+        [data-mode="studio"] .story-only, [data-mode="professional"] .story-only { display: none !important; }
+    </style>
     <style>
         :root {
-            /* Dark Theme (Default) */
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
             --bg: #0f1014;
             --surface: #1a1c23;
-            --surface-hover: #242731;
             --border: rgba(255, 255, 255, 0.08);
             --text: #f8fafc;
             --text-muted: #94a3b8;
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --accent: #10b981;
-            --danger: #ef4444;
-            --glass: rgba(26, 28, 35, 0.8);
-            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
 
         [data-theme="light"] {
             --bg: #f8fafc;
             --surface: #ffffff;
-            --surface-hover: #f1f5f9;
             --border: rgba(0, 0, 0, 0.08);
             --text: #0f172a;
             --text-muted: #64748b;
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --accent: #059669;
-            --danger: #dc2626;
-            --glass: rgba(255, 255, 255, 0.82);
-            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
         }
 
         * {
@@ -48,83 +66,77 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            transition: background-color 0.3s, color 0.3s;
-            min-height: 100vh;
-            overflow-x: hidden;
+            transition: background 0.3s;
         }
 
-        /* --- Layout --- */
-        .app-shell {
+        /* --- Studio Mode Styles (Default) --- */
+        [data-mode="studio"] .app-shell {
             max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
 
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 60px;
-        }
-
-        .logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Inter', sans-serif;
-            font-weight: 700;
-            color: white;
-            font-size: 1.2rem;
-        }
-
-        .theme-toggle {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-        .theme-toggle:hover {
-            border-color: var(--primary);
-        }
-
-        /* --- Stages --- */
-        .stage {
+        [data-mode="studio"] .stage {
             display: none;
-            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeIn 0.5s ease;
         }
 
-        .stage.active {
+        [data-mode="studio"] .stage.active {
             display: block;
         }
 
-        @keyframes slideIn {
+        /* --- Storyteller Mode Styles --- */
+        [data-mode="storyteller"] .canvas-wrapper {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        [data-mode="storyteller"] .canvas-main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 60px;
+        }
+
+        [data-mode="storyteller"] .canvas-sidebar {
+            width: 350px;
+            border-l: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Common Globals */
+        .glass {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(10px);
             }
 
             to {
@@ -133,174 +145,33 @@
             }
         }
 
-        /* --- Stage 1: Write --- */
-        .hero {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .hero h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            margin-bottom: 12px;
-        }
-
-        .hero p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
-
-        .editor-container {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: var(--shadow);
-            position: relative;
-        }
-
-        .editor-container::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            bottom: -1px;
-            background: linear-gradient(135deg, var(--primary), transparent, var(--primary));
-            border-radius: 20px;
-            z-index: -1;
-            opacity: 0.1;
-        }
-
-        #mainScript {
-            width: 100%;
-            height: 350px;
-            background: transparent;
-            border: none;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 1.15rem;
-            resize: none;
-            outline: none;
-            line-height: 1.8;
-        }
-
-        .editor-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-
-        .hint {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* --- Buttons --- */
-        .btn {
-            padding: 12px 28px;
-            border-radius: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border: none;
-            font-family: inherit;
-            font-size: 1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-secondary {
-            background: var(--surface-hover);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--primary);
-        }
-
-        /* --- Stage 2: Refine --- */
+        /* Image Picker Grid (used in multiple stages) */
         .scene-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
         }
 
         .scene-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 24px;
-            transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .scene-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary-light);
-            box-shadow: var(--shadow);
-        }
-
-        .scene-count {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--primary-light);
-            margin-bottom: 4px;
-        }
-
-        .scene-text {
-            background: transparent;
-            border: none;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 0.95rem;
-            resize: none;
-            outline: none;
-            min-height: 80px;
+            border-radius: 16px;
+            padding: 20px;
+            transition: 0.3s;
         }
 
         .image-picker {
-            border-radius: 12px;
-            overflow: hidden;
-            background: var(--bg);
-            border: 2px dashed var(--border);
             aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            margin-top: 15px;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            border: 2px dashed var(--border);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .image-picker:hover {
-            border-color: var(--primary-light);
-            background: var(--surface-hover);
         }
 
         .image-preview {
@@ -308,369 +179,304 @@
             height: 100%;
             object-fit: cover;
             position: absolute;
-            top: 0;
-            left: 0;
-            display: none;
-        }
-
-        .image-picker span {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .image-picker i {
-            font-size: 1.5rem;
-        }
-
-        /* --- Global Settings --- */
-        .global-settings {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 30px;
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-        }
-
-        .setting-field {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .setting-field label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .setting-field select {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 10px;
-            color: var(--text);
-            outline: none;
-        }
-
-        /* --- Stage 3: Generating --- */
-        .generating-status {
-            text-align: center;
-            padding: 60px 0;
-        }
-
-        .orbit-loader {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 40px;
-            position: relative;
-        }
-
-        .orbit {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 2px solid var(--border);
-            border-radius: 50%;
-        }
-
-        .planet {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: var(--primary);
-            border-radius: 50%;
-            top: -6px;
-            left: 50%;
-            margin-left: -6px;
-            box-shadow: 0 0 15px var(--primary);
-            animation: rotate 2s infinite linear;
-            transform-origin: 50% 56px;
-        }
-
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .progress-bar-wrap {
-            width: 100%;
-            max-width: 500px;
-            height: 6px;
-            background: var(--surface);
-            border-radius: 3px;
-            margin: 30px auto;
-            overflow: hidden;
-        }
-
-        #progressBar {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), #8b5cf6);
-            transition: width 0.5s;
-        }
-
-        /* --- Stage 4: Result --- */
-        .result-stage {
-            text-align: center;
-        }
-
-        #videoResult {
-            width: 100%;
-            max-width: 800px;
-            border-radius: 24px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-            margin-bottom: 40px;
-        }
-
-        .actions {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        /* --- Image Gallery Modal --- */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
-            display: none;
-            padding: 40px;
-            backdrop-filter: blur(10px);
-        }
-
-        .modal-content {
-            background: var(--surface);
-            max-width: 800px;
-            margin: 0 auto;
-            border-radius: 24px;
-            padding: 30px;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .gallery-item {
-            aspect-ratio: 1;
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .gallery-item:hover {
-            transform: scale(1.05);
-        }
-
-        .gallery-item.selected {
-            border-color: var(--primary);
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .upload-zone {
-            border: 2px dashed var(--border);
-            padding: 30px;
-            text-align: center;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        .upload-zone:hover {
-            border-color: var(--primary);
-        }
-
-        /* --- Responsive --- */
-        @media (max-width: 768px) {
-            .logo {
-                font-size: 1.4rem;
-            }
-
-            .hero h2 {
-                font-size: 1.8rem;
-            }
-
-            .global-settings {
-                grid-template-columns: 1fr 1fr;
-            }
         }
     </style>
 </head>
 
-<body>
+<body class="bg-[var(--bg)] text-[var(--text)]">
 
-    <div class="app-shell">
-        <nav>
-            <div class="logo">
-                <div class="logo-icon">K</div>
-                Kokoro Studio
+    <!-- PERSISTENT NAV -->
+    <nav
+        class="fixed top-0 left-0 w-full z-50 px-6 py-4 flex justify-between items-center bg-transparent backdrop-blur-sm border-b border-white/5">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-black text-white">K</div>
+            <span class="font-bold tracking-tight text-lg">Kokoro <span
+                    class="text-indigo-400 font-normal">Studio</span></span>
+        </div>
+
+        <!-- Mode Switcher -->
+        <div class="flex items-center bg-black/20 rounded-full p-1 border border-white/10">
+            <button onclick="setMode('studio')"
+                class="mode-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all"
+                id="btn-studio">STUDIO</button>
+            <button onclick="setMode('professional')"
+                class="mode-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-slate-500"
+                id="btn-professional">PRO</button>
+            <button onclick="setMode('storyteller')"
+                class="mode-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-slate-500"
+                id="btn-storyteller">CANVAS</button>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Settings Dropdown/Group -->
+            <div class="hidden md:flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/5">
+                <select id="voiceSelect"
+                    class="bg-transparent border-none text-[10px] font-bold text-slate-400 outline-none cursor-pointer uppercase tracking-widest hover:text-indigo-400 transition-colors">
+                    <option value="af_bella">Bella (US Female)</option>
+                    <option value="af_sky">Sky (US Female)</option>
+                    <option value="am_adam">Adam (US Male)</option>
+                    <option value="bf_emma">Emma (UK Female)</option>
+                    <option value="bm_george">George (UK Male)</option>
+                </select>
+                <div class="w-px h-3 bg-white/10 mx-1"></div>
+                <select id="orientationSelect"
+                    class="bg-transparent border-none text-[10px] font-bold text-slate-400 outline-none cursor-pointer uppercase tracking-widest hover:text-indigo-400 transition-colors">
+                    <option value="portrait">Portrait 9:16</option>
+                    <option value="landscape">Landscape 16:9</option>
+                </select>
             </div>
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span id="themeIcon">🌙</span>
-                <span id="themeName">Dark</span>
+
+            <button onclick="toggleTheme()"
+                class="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/5 transition-all">
+                <span class="material-symbols-outlined text-xl" id="themeIcon">dark_mode</span>
             </button>
-        </nav>
-
-        <!-- STAGE 1: WRITE -->
-        <div id="stage1" class="stage active">
-            <div class="hero">
-                <h2>Start with a vision.</h2>
-                <p>Paste your script below. Use double-spaces to mark scene changes.</p>
+            <div
+                class="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
+                <span class="text-[10px] font-bold">AR</span>
             </div>
-            <div class="editor-container">
-                <textarea id="mainScript" placeholder="Once upon a time... (double enter for next scene)"></textarea>
-                <div class="editor-footer">
-                    <div class="hint">Shift + Enter for small gaps, Double Enter for Scenes.</div>
-                    <button class="btn btn-primary" onclick="goToRefine()">Next: Refine Story ✨</button>
+    </nav>
+
+    <div class="pt-20"> <!-- Spacer for fixed nav -->
+
+        <!-- ==========================================
+         MODE: STUDIO (Default)
+         ========================================== -->
+        <div class="studio-only app-shell">
+            <!-- Stage 1: Script -->
+            <div id="studio-stage1" class="stage active">
+                <div class="max-w-2xl mx-auto text-center mb-10">
+                    <h1 class="text-4xl font-extrabold mb-4 font-['Playfair_Display'] italic">Write your masterpiece.
+                    </h1>
+                    <p class="text-slate-400">Paste your voiceover script. Double space for new scenes.</p>
+                </div>
+                <div class="glass p-8 max-w-3xl mx-auto shadow-2xl relative overflow-hidden">
+                    <div
+                        class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50">
+                    </div>
+                    <textarea id="mainScript"
+                        class="w-full h-80 bg-transparent border-none outline-none text-xl leading-relaxed resize-none text-slate-200 placeholder:text-slate-700 font-light"
+                        placeholder="Once upon a time..."></textarea>
+                    <div class="mt-6 flex justify-between items-center border-t border-white/5 pt-6">
+                        <span class="text-xs text-slate-500 uppercase tracking-widest">Story Draft v1.0</span>
+                        <button class="btn btn-primary px-10" onclick="goToRefine()">Review Scenes →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 2: Refine -->
+            <div id="studio-stage2" class="stage">
+                <div class="flex justify-between items-end mb-10">
+                    <div>
+                        <h2 class="text-2xl font-bold">Storyboard Refinement</h2>
+                        <p class="text-slate-400 text-sm">Fine-tune text and match visuals to your narrative.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="startProduction()">Launch Production 🚀</button>
+                </div>
+                <div id="studio-sceneGrid" class="scene-grid mb-20"></div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+         MODE: PROFESSIONAL (Dashboard)
+         ========================================== -->
+        <div class="prof-only px-8 py-6">
+            <div class="flex gap-10">
+                <!-- Sidebar -->
+                <aside class="w-64 flex-shrink-0 space-y-8">
+                    <div>
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Workspace</p>
+                        <nav class="space-y-1">
+                            <a href="#"
+                                class="flex items-center gap-3 px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-lg font-bold text-sm">
+                                <span class="material-symbols-outlined text-lg">edit_document</span> Story Lab
+                            </a>
+                            <a href="#"
+                                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-white/5 rounded-lg font-medium text-sm transition-all">
+                                <span class="material-symbols-outlined text-lg">folder_open</span> Projects
+                            </a>
+                            <a href="#"
+                                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-white/5 rounded-lg font-medium text-sm transition-all">
+                                <span class="material-symbols-outlined text-lg">image</span> Library
+                            </a>
+                        </nav>
+                    </div>
+                    <div class="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4">
+                        <p class="text-[10px] font-bold text-indigo-400 uppercase mb-2">GPU Resources</p>
+                        <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-indigo-500 w-2/3"></div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Dashboard Area -->
+                <div class="flex-1">
+                    <div class="flex justify-between items-start mb-8">
+                        <h2 class="text-3xl font-black tracking-tight">Project Dashboard</h2>
+                        <div class="flex gap-3">
+                            <button class="btn bg-white/5 text-slate-300 border border-white/10 hover:border-indigo-500"
+                                onclick="resetApp()">New Project</button>
+                            <button class="btn btn-primary shadow-indigo-500/20" onclick="startProduction()">Execute
+                                Render</button>
+                        </div>
+                    </div>
+
+                    <!-- Professional View: Script Area -->
+                    <div id="prof-stage1" class="stage active">
+                        <div class="bg-[#1a1c23] border border-white/5 rounded-2xl p-6 shadow-xl">
+                            <div class="flex items-center gap-4 mb-4 border-b border-white/5 pb-4">
+                                <span
+                                    class="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 material-symbols-outlined">description</span>
+                                <span class="font-bold text-sm">Voiceover Script Master</span>
+                            </div>
+                            <textarea id="profScript"
+                                class="w-full h-96 bg-transparent border-none outline-none text-base resize-none text-slate-300 font-mono text-sm leading-relaxed"
+                                oninput="syncScripts(this.value)"
+                                placeholder="Enter professional script here..."></textarea>
+                            <div class="mt-4 flex justify-end">
+                                <button class="btn btn-primary text-sm px-6" onclick="goToRefine()">Process
+                                    Storybeats</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Professional View: Refine Area -->
+                    <div id="prof-stage2" class="stage">
+                        <div id="prof-sceneGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- STAGE 2: REFINE -->
-        <div id="stage2" class="stage">
-            <div class="hero">
-                <h2>Refine your Storyboard</h2>
-                <p>Edit text and match images for each segment.</p>
-            </div>
+        <!-- ==========================================
+         MODE: STORYTELLER (Focus Canvas)
+         ========================================== -->
+        <div class="story-only canvas-wrapper">
+            <main class="canvas-main">
+                <div class="max-w-2xl mx-auto">
+                    <input type="text" placeholder="Title of your story..."
+                        class="w-full bg-transparent border-none outline-none text-6xl font-['Playfair_Display'] italic text-white mb-10 placeholder:text-white/5">
+                    <textarea id="storyScript"
+                        class="w-full h-[600px] bg-transparent border-none outline-none text-2xl leading-loose font-['Playfair_Display'] text-slate-400 placeholder:text-slate-800 resize-none"
+                        oninput="syncScripts(this.value)" placeholder="Begin the narrative هنا..."></textarea>
+                </div>
+            </main>
+            <aside class="canvas-sidebar border-l border-white/5 bg-white/[0.02]">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-sm uppercase tracking-widest text-slate-500">Storyboard</h3>
+                    <button class="text-indigo-400 font-bold text-xs" onclick="startProduction()">Render Film</button>
+                </div>
+                <div id="story-sceneGrid" class="space-y-4">
+                    <!-- Vertical scene cards here -->
+                </div>
+                <button
+                    class="w-full py-8 mt-6 border-2 border-dashed border-white/10 rounded-xl text-slate-600 hover:text-indigo-400 hover:border-indigo-400 transition-all text-xs font-bold uppercase tracking-widest"
+                    onclick="goToWrite()">Add Narrative Beat</button>
+            </aside>
+        </div>
 
-            <div id="sceneGrid" class="scene-grid">
-                <!-- Scene Cards will be injected here -->
+        <!-- COMMON STATUS & RESULT (Overlay style for all modes) -->
+        <div id="overlay-generating"
+            class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-10 text-center hidden">
+            <div class="w-32 h-32 relative mb-10">
+                <div class="absolute inset-0 border-2 border-white/10 rounded-full"></div>
+                <div class="absolute inset-0 border-t-2 border-indigo-500 rounded-full animate-spin"></div>
             </div>
-
-            <div class="global-settings">
-                <div class="setting-field">
-                    <label>Narrative Voice</label>
-                    <select id="v_voice">
-                        <option value="af_bella">Bella (Standard)</option>
-                        <option value="af_sarah">Sarah (Expressive)</option>
-                        <option value="am_adam">Adam (Deep)</option>
-                        <option value="am_michael">Michael (Warm)</option>
-                    </select>
-                </div>
-                <div class="setting-field">
-                    <label>Orientation</label>
-                    <select id="v_orient">
-                        <option value="portrait">Portrait (9:16)</option>
-                        <option value="landscape">Landscape (16:9)</option>
-                    </select>
-                </div>
-                <div class="setting-field">
-                    <label>Captions</label>
-                    <select id="v_capt">
-                        <option value="bottom">Bottom</option>
-                        <option value="center">Center</option>
-                        <option value="top">Top</option>
-                        <option value="off">Off</option>
-                    </select>
-                </div>
-                <div class="setting-field">
-                    <label>VFX Style</label>
-                    <select id="v_vfx">
-                        <option value="on">Cinematic (Pan/Zoom)</option>
-                        <option value="off">Static</option>
-                    </select>
+            <h2 class="text-3xl font-black mb-2" id="statusTitle">Transmuting Vision...</h2>
+            <p class="text-slate-400 mb-8 max-w-md" id="statusMsg">Our engines are currently weaving your script into
+                cinematic frames.</p>
+            <div class="w-full max-w-lg h-1.5 bg-white/10 rounded-full overflow-hidden mb-4">
+                <div id="progressBar"
+                    class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-0 transition-all duration-1000">
                 </div>
             </div>
+            <p id="elapsedTime" class="text-xs font-mono text-slate-600">0s elapsed</p>
+        </div>
 
-            <div style="margin-top: 40px; display: flex; justify-content: space-between;">
-                <button class="btn btn-secondary" onclick="goToWrite()">← Back to Script</button>
-                <button class="btn btn-primary" onclick="startProduction()">Launch Production 🚀</button>
+        <div id="overlay-result"
+            class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-10 hidden overflow-y-auto">
+            <div class="max-w-4xl w-full">
+                <div class="flex justify-between items-end mb-6">
+                    <h2 class="text-2xl font-bold font-['Playfair_Display'] italic">The story is complete.</h2>
+                    <button class="text-white font-bold" onclick="resetApp()">Start Over</button>
+                </div>
+                <video id="videoResult"
+                    class="w-full rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/10"
+                    controls></video>
+                <div class="mt-8 flex justify-center gap-4">
+                    <a id="downloadBtn" href="#" download class="btn btn-primary px-12">📥 Download 4K Master</a>
+                    <button class="btn bg-white/10 text-white" onclick="closeOverlay('overlay-result')">Keep
+                        Editing</button>
+                </div>
             </div>
         </div>
 
-        <!-- STAGE 3: GENERATING -->
-        <div id="stage3" class="stage">
-            <div class="generating-status">
-                <div class="orbit-loader">
-                    <div class="orbit"></div>
-                    <div class="planet"></div>
-                </div>
-                <h2 id="statusTitle">Weavering your tale...</h2>
-                <p id="statusMsg">Calculating trajectories and mixing sounds.</p>
-                <div class="progress-bar-wrap">
-                    <div id="progressBar"></div>
-                </div>
-                <p id="elapsedTime" class="hint">Started just now</p>
-            </div>
-        </div>
-
-        <!-- STAGE 4: RESULT -->
-        <div id="stage4" class="stage result-stage">
-            <div class="hero">
-                <h2>The story is ready.</h2>
-                <p>Your cinematic vision is now reality.</p>
-            </div>
-            <video id="videoResult" controls></video>
-            <div class="actions">
-                <button class="btn btn-secondary" onclick="resetApp()">Create Another</button>
-                <a id="downloadBtn" class="btn btn-primary" href="#" download>📥 Download Masterpiece</a>
-            </div>
-        </div>
     </div>
 
-    <!-- Image Selection Modal -->
-    <div id="imageModal" class="modal">
-        <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3>Select Backdrop</h3>
-                <button class="btn-secondary" style="padding: 5px 12px;" onclick="closeModal()">Close</button>
+    <!-- Image Modal -->
+    <div id="imageModal"
+        class="fixed inset-0 z-[200] bg-black/90 backdrop-blur-lg flex items-center justify-center p-8 hidden">
+        <div class="glass w-full max-w-4xl max-h-full flex flex-col p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Backdrop Selection</h3>
+                <button onclick="closeModal()"
+                    class="material-symbols-outlined text-slate-500 hover:text-white">close</button>
             </div>
-            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                <input type="file" id="fileInput" hidden accept="image/*,video/*" onchange="handleUpload(event)">
-                <p>Click to upload Image or Video</p>
-            </div>
-            <div class="hint">Available Assets:</div>
-            <div id="galleryGrid" class="gallery-grid">
-                <!-- Images will be listed here -->
+
+            <div class="flex gap-10">
+                <!-- Upload Zone -->
+                <div class="w-64 flex-shrink-0">
+                    <div class="border-2 border-dashed border-white/10 rounded-2xl h-48 flex flex-col items-center justify-center gap-4 hover:border-indigo-500 cursor-pointer transition-all"
+                        onclick="document.getElementById('fileInput').click()">
+                        <span class="material-symbols-outlined text-3xl text-slate-600">upload</span>
+                        <span class="text-xs font-bold uppercase text-slate-500 text-center px-4">Upload Custom Image or
+                            Video</span>
+                        <input type="file" id="fileInput" hidden accept="image/*,video/*"
+                            onchange="handleUpload(event)">
+                    </div>
+                </div>
+
+                <!-- Gallery Grid -->
+                <div class="flex-1 overflow-y-auto max-h-[500px] grid grid-cols-4 gap-4 pr-4" id="galleryGrid">
+                    <!-- Injected via JS -->
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentStage = 1;
+        let currentMode = 'studio';
         let scenes = [];
-        let activeSceneIdx = null;
         let imageLibrary = { default: [], uploads: [] };
+        let activeSceneIdx = null;
+
+        function setMode(mode) {
+            document.documentElement.setAttribute('data-mode', mode);
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.add('text-slate-500'));
+            document.getElementById(`btn-${mode}`).classList.remove('text-slate-500');
+            document.getElementById(`btn-${mode}`).classList.add('bg-white/10', 'text-white');
+
+            // Remove active class from other buttons
+            ['studio', 'professional', 'storyteller'].forEach(m => {
+                if (m !== mode) document.getElementById(`btn-${m}`).classList.remove('bg-white/10', 'text-white');
+            });
+
+            currentMode = mode;
+            renderScenes(); // Redraw grid for specific layout
+        }
 
         function toggleTheme() {
             const html = document.documentElement;
             const current = html.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-theme', next);
-            document.getElementById('themeIcon').innerText = next === 'dark' ? '🌙' : '☀️';
-            document.getElementById('themeName').innerText = next.charAt(0).toUpperCase() + next.slice(1);
+            document.getElementById('themeIcon').innerText = next === 'dark' ? 'dark_mode' : 'light_mode';
         }
 
-        function showStage(n) {
-            document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
-            document.getElementById(`stage${n}`).classList.add('active');
-            currentStage = n;
-            window.scrollTo(0, 0);
+        // Sync scripts across different text areas
+        function syncScripts(val) {
+            document.getElementById('mainScript').value = val;
+            document.getElementById('profScript').value = val;
+            document.getElementById('storyScript').value = val;
         }
 
         function goToWrite() { showStage(1); }
@@ -679,171 +485,187 @@
             const text = document.getElementById('mainScript').value;
             if (!text.trim()) return alert("Write something first!");
 
-            // Logical split by empty lines
             scenes = text.split(/\r?\n\r?\n/)
                 .map(s => s.trim())
                 .filter(s => s.length > 0)
                 .map(s => ({ text: s, media: 'detect', type: 'image' }));
 
-            renderScenes();
             showStage(2);
+            renderScenes();
             loadGallery();
         }
 
+        function showStage(n) {
+            document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+            // Show correctly for each mode
+            if (currentMode === 'studio') document.getElementById(`studio-stage${n}`).classList.add('active');
+            if (currentMode === 'professional') document.getElementById(`prof-stage${n}`).classList.add('active');
+            if (currentMode === 'storyteller') { /* Storyteller uses one persistent view */ }
+        }
+
         function renderScenes() {
-            const grid = document.getElementById('sceneGrid');
+            if (currentMode === 'studio') renderStudioScenes();
+            if (currentMode === 'professional') renderProfScenes();
+            if (currentMode === 'storyteller') renderStoryScenes();
+        }
+
+        function renderStudioScenes() {
+            const grid = document.getElementById('studio-sceneGrid');
             grid.innerHTML = '';
             scenes.forEach((s, idx) => {
                 const card = document.createElement('div');
                 card.className = 'scene-card';
                 card.innerHTML = `
-                <div class="scene-count">Scene ${idx + 1}</div>
-                <textarea class="scene-text" onchange="updateSceneText(${idx}, this.value)">${s.text}</textarea>
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[10px] font-black uppercase text-indigo-400">Scene ${idx + 1}</span>
+                </div>
+                <textarea class="w-full bg-transparent border-none text-sm text-slate-300 h-24 resize-none outline-none" onchange="scenes[${idx}].text=this.value">${s.text}</textarea>
                 <div class="image-picker" onclick="openModal(${idx})">
-                    <img id="prev-img-${idx}" class="image-preview" src="${s.type !== 'video' ? getImageUrl(s.media) : ''}" style="${s.media !== 'detect' && s.type !== 'video' ? 'display:block;' : 'display:none;'}">
-                    <video id="prev-vid-${idx}" class="image-preview" src="${s.type === 'video' ? getImageUrl(s.media) : ''}" muted loop autoplay style="${s.media !== 'detect' && s.type === 'video' ? 'display:block;' : 'display:none;'}"></video>
-                    <i id="icon-${idx}" style="${s.media !== 'detect' ? 'display:none;' : ''}">📸</i>
-                    <span id="label-${idx}">${s.media === 'detect' ? 'Auto-detecting' : s.media}</span>
+                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="image-preview" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="image-preview">`) : '<i>📸</i>'}
+                    <span class="absolute bottom-2 right-2 text-[8px] bg-black/60 px-2 py-1 rounded-full uppercase">${s.media}</span>
                 </div>
             `;
                 grid.appendChild(card);
             });
         }
 
+        function renderProfScenes() {
+            const grid = document.getElementById('prof-sceneGrid');
+            grid.innerHTML = '';
+            scenes.forEach((s, idx) => {
+                const row = document.createElement('div');
+                row.className = 'flex gap-4 p-4 bg-[#1a1c23] border border-white/5 rounded-xl';
+                row.innerHTML = `
+                <div class="w-32 h-20 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer border border-white/5" onclick="openModal(${idx})">
+                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="w-full h-full object-cover" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="w-full h-full object-cover">`) : '<div class="w-full h-full flex items-center justify-center text-xs text-slate-700 bg-black">NO MEDIA</div>'}
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] font-bold text-slate-500 uppercase">Track ${idx + 1}</span>
+                    </div>
+                    <textarea class="w-full bg-transparent border-none text-xs text-slate-400 h-10 resize-none overflow-hidden outline-none" onchange="scenes[${idx}].text=this.value">${s.text}</textarea>
+                </div>
+            `;
+                grid.appendChild(row);
+            });
+        }
+
+        function renderStoryScenes() {
+            const grid = document.getElementById('story-sceneGrid');
+            grid.innerHTML = '';
+            scenes.forEach((s, idx) => {
+                const div = document.createElement('div');
+                div.className = 'glass p-3 flex flex-col gap-3 group hover:border-indigo-500 transition-all cursor-pointer';
+                div.onclick = () => openModal(idx);
+                div.innerHTML = `
+                <div class="aspect-video rounded-lg overflow-hidden relative">
+                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="w-full h-full object-cover" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="w-full h-full object-cover">`) : '<div class="w-full h-full bg-black"></div>'}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div class="absolute bottom-2 left-2 text-[9px] font-bold text-white uppercase">Beat ${idx + 1}</div>
+                </div>
+                <p class="text-[10px] text-slate-400 italic line-clamp-2">${s.text}</p>
+            `;
+                grid.appendChild(div);
+            });
+        }
+
         function getImageUrl(media) {
             if (media === 'detect') return '';
-            // Look in both default and uploads
             const found = [...imageLibrary.default, ...imageLibrary.uploads].find(i => i.name === media);
             return found ? found.url : '';
         }
 
-        function updateSceneText(idx, val) {
-            scenes[idx].text = val;
-        }
-
         async function loadGallery() {
-            try {
-                const res = await fetch('/list-images');
-                imageLibrary = await res.json();
-                updateGalleryUI();
-            } catch (e) { console.error("Gallery failed", e); }
+            const res = await fetch('/list-images');
+            imageLibrary = await res.json();
+            updateGalleryUI();
         }
 
         function updateGalleryUI() {
             const grid = document.getElementById('galleryGrid');
             grid.innerHTML = '';
-
-            const allImages = [...imageLibrary.default, ...imageLibrary.uploads];
-            allImages.forEach(img => {
+            [...imageLibrary.default, ...imageLibrary.uploads].forEach(img => {
                 const div = document.createElement('div');
-                div.className = 'gallery-item';
+                div.className = 'aspect-square rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-indigo-500 transition-all relative';
                 if (img.type === 'video') {
-                    div.innerHTML = `<video src="${img.url}" muted></video><div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.5); color:white; font-size:10px; padding:2px 4px; border-radius:4px;">VIDEO</div>`;
+                    div.innerHTML = `<video src="${img.url}" class="w-full h-full object-cover" muted></video><span class="absolute top-1 right-1 text-[8px] bg-black/60 p-1 rounded">VID</span>`;
                 } else {
-                    div.innerHTML = `<img src="${img.url}" alt="${img.name}">`;
+                    div.innerHTML = `<img src="${img.url}" class="w-full h-full object-cover">`;
                 }
-                div.onclick = () => selectMedia(img.name, img.type);
-                div.style.position = 'relative';
+                div.onclick = () => { scenes[activeSceneIdx].media = img.name; scenes[activeSceneIdx].type = img.type; closeModal(); renderScenes(); };
                 grid.appendChild(div);
             });
         }
 
-        function selectMedia(name, type) {
-            scenes[activeSceneIdx].media = name;
-            scenes[activeSceneIdx].type = type;
-            closeModal();
-            renderScenes();
-        }
-
-        function openModal(idx) {
-            activeSceneIdx = idx;
-            document.getElementById('imageModal').style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('imageModal').style.display = 'none';
-        }
+        function openModal(idx) { activeSceneIdx = idx; document.getElementById('imageModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('imageModal').classList.add('hidden'); }
 
         async function handleUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-
             const formData = new FormData();
             formData.append('file', file);
-
-            try {
-                const res = await fetch('/upload-image', { method: 'POST', body: formData });
-                const data = await res.json();
-                await loadGallery(); // Refresh library
-                selectImage(data.filename);
-            } catch (err) { alert("Upload failed"); }
+            const res = await fetch('/upload-image', { method: 'POST', body: formData });
+            const data = await res.json();
+            await loadGallery();
+            scenes[activeSceneIdx].media = data.filename;
+            scenes[activeSceneIdx].type = file.type.startsWith('video') ? 'video' : 'image';
+            closeModal();
+            renderScenes();
         }
 
         async function startProduction() {
             const request = {
                 scenes: scenes.map(s => ({ text: s.text, media_name: s.media })),
-                voice: document.getElementById('v_voice').value,
-                orientation: document.getElementById('v_orient').value,
-                caption_position: document.getElementById('v_capt').value === 'off' ? 'bottom' : document.getElementById('v_capt').value,
-                add_captions: document.getElementById('v_capt').value !== 'off',
-                add_effects: document.getElementById('v_vfx').value === 'on'
+                voice: document.getElementById('voiceSelect').value,
+                orientation: document.getElementById('orientationSelect').value,
+                add_captions: true,
+                add_effects: true
             };
-
-            showStage(3);
-            try {
-                const res = await fetch('/generate-ghibli-video', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(request)
-                });
-                const data = await res.json();
-                if (data.job_id) poll(data.job_id);
-            } catch (e) {
-                alert("Fail");
-                showStage(2);
-            }
+            showOverlay('overlay-generating');
+            const res = await fetch('/generate-ghibli-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            const data = await res.json();
+            if (data.job_id) poll(data.job_id);
         }
 
         function poll(id) {
             const interval = setInterval(async () => {
                 const res = await fetch(`/video-status/${id}`);
                 const data = await res.json();
-
-                document.getElementById('elapsedTime').innerText = `Time elapsed: ${Math.round(data.elapsed_seconds || 0)}s`;
-
-                if (data.status === 'success') {
-                    clearInterval(interval);
-                    finish(data.filename);
-                } else if (data.status === 'failed') {
-                    clearInterval(interval);
-                    alert("Error: " + data.error);
-                    showStage(2);
-                } else {
-                    let prog = Math.min(98, (data.elapsed_seconds / 300) * 100);
-                    document.getElementById('progressBar').style.width = prog + '%';
-                }
-            }, 4000);
+                document.getElementById('elapsedTime').innerText = `${Math.round(data.elapsed_seconds || 0)}s elapsed`;
+                if (data.status === 'success') { clearInterval(interval); finish(data.filename); }
+                else if (data.status === 'failed') { clearInterval(interval); alert(data.error); hideOverlay('overlay-generating'); }
+                else { document.getElementById('progressBar').style.width = Math.min(98, (data.elapsed_seconds / 300) * 100) + '%'; }
+            }, 5000);
         }
 
-        function finish(filename) {
-            const url = `/videos/${filename}`;
-            const vid = document.getElementById('videoResult');
-            vid.src = url;
+        function finish(file) {
+            hideOverlay('overlay-generating');
+            const url = `/videos/${file}`;
+            document.getElementById('videoResult').src = url;
             document.getElementById('downloadBtn').href = url;
-            showStage(4);
+            showOverlay('overlay-result');
         }
+
+        function showOverlay(id) { document.getElementById(id).classList.remove('hidden'); }
+        function hideOverlay(id) { document.getElementById(id).classList.add('hidden'); }
+        function closeOverlay(id) { hideOverlay(id); }
 
         function resetApp() {
-            document.getElementById('mainScript').value = '';
+            syncScripts('');
+            scenes = [];
             showStage(1);
+            hideOverlay('overlay-result');
         }
 
-        // Close modal on outside click
-        window.onclick = (e) => {
-            if (e.target.id === 'imageModal') closeModal();
-        }
+        // Init scripts
+        document.getElementById('mainScript').addEventListener('input', e => syncScripts(e.target.value));
+
     </script>
-
 </body>
 
 </html>
