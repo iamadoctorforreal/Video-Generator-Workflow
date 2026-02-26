@@ -641,8 +641,8 @@
                 <button class="btn-secondary" style="padding: 5px 12px;" onclick="closeModal()">Close</button>
             </div>
             <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                <input type="file" id="fileInput" hidden accept="image/*" onchange="handleUpload(event)">
-                <p>Click to upload your own Image</p>
+                <input type="file" id="fileInput" hidden accept="image/*,video/*" onchange="handleUpload(event)">
+                <p>Click to upload Image or Video</p>
             </div>
             <div class="hint">Available Assets:</div>
             <div id="galleryGrid" class="gallery-grid">
@@ -683,7 +683,7 @@
             scenes = text.split(/\r?\n\r?\n/)
                 .map(s => s.trim())
                 .filter(s => s.length > 0)
-                .map(s => ({ text: s, media: 'detect' }));
+                .map(s => ({ text: s, media: 'detect', type: 'image' }));
 
             renderScenes();
             showStage(2);
@@ -700,7 +700,8 @@
                 <div class="scene-count">Scene ${idx + 1}</div>
                 <textarea class="scene-text" onchange="updateSceneText(${idx}, this.value)">${s.text}</textarea>
                 <div class="image-picker" onclick="openModal(${idx})">
-                    <img id="prev-${idx}" class="image-preview" src="${getImageUrl(s.media)}" style="${s.media !== 'detect' ? 'display:block;' : ''}">
+                    <img id="prev-img-${idx}" class="image-preview" src="${s.type !== 'video' ? getImageUrl(s.media) : ''}" style="${s.media !== 'detect' && s.type !== 'video' ? 'display:block;' : 'display:none;'}">
+                    <video id="prev-vid-${idx}" class="image-preview" src="${s.type === 'video' ? getImageUrl(s.media) : ''}" muted loop autoplay style="${s.media !== 'detect' && s.type === 'video' ? 'display:block;' : 'display:none;'}"></video>
                     <i id="icon-${idx}" style="${s.media !== 'detect' ? 'display:none;' : ''}">📸</i>
                     <span id="label-${idx}">${s.media === 'detect' ? 'Auto-detecting' : s.media}</span>
                 </div>
@@ -736,10 +737,22 @@
             allImages.forEach(img => {
                 const div = document.createElement('div');
                 div.className = 'gallery-item';
-                div.innerHTML = `<img src="${img.url}" alt="${img.name}">`;
-                div.onclick = () => selectImage(img.name);
+                if (img.type === 'video') {
+                    div.innerHTML = `<video src="${img.url}" muted></video><div style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.5); color:white; font-size:10px; padding:2px 4px; border-radius:4px;">VIDEO</div>`;
+                } else {
+                    div.innerHTML = `<img src="${img.url}" alt="${img.name}">`;
+                }
+                div.onclick = () => selectMedia(img.name, img.type);
+                div.style.position = 'relative';
                 grid.appendChild(div);
             });
+        }
+
+        function selectMedia(name, type) {
+            scenes[activeSceneIdx].media = name;
+            scenes[activeSceneIdx].type = type;
+            closeModal();
+            renderScenes();
         }
 
         function openModal(idx) {
@@ -749,12 +762,6 @@
 
         function closeModal() {
             document.getElementById('imageModal').style.display = 'none';
-        }
-
-        function selectImage(name) {
-            scenes[activeSceneIdx].media = name;
-            closeModal();
-            renderScenes(); // Quick redraw
         }
 
         async function handleUpload(e) {

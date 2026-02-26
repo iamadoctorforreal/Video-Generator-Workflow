@@ -59,6 +59,11 @@ app.mount("/static/uploads", StaticFiles(directory=UPLOAD_DIR), name="static_upl
 
 @app.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
+    # Support images and videos
+    exts = ('.png', '.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.webm')
+    if not file.filename.lower().endswith(exts):
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+        
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -67,8 +72,9 @@ async def upload_image(file: UploadFile = File(...)):
 @app.get("/list-images")
 async def list_images():
     def get_files(folder, path_prefix):
-        return [{"name": f, "url": f"{path_prefix}/{f}"} for f in os.listdir(folder) 
-                if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        exts = ('.png', '.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.webm')
+        return [{"name": f, "url": f"{path_prefix}/{f}", "type": "video" if f.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) else "image"} 
+                for f in os.listdir(folder) if f.lower().endswith(exts)]
     
     return {
         "default": get_files("images", "/static/images"),
@@ -277,14 +283,25 @@ def generate_video_task(job_id: str, request: VideoRequest):
             TARGET_H = 1280 if request.orientation == "portrait" else 720
 
             if not media_path or not os.path.exists(media_path):
-                clip = ColorClip(size=(TARGET_W, TARGET_H), color=(30,30,30)).with_duration(audio_clip.duration)
+                clip = ColorClip(size=(TARGET_W, TARGET_H), color=(30, 30, 30)).with_duration(audio_clip.duration)
             else:
-                clip = ImageClip(media_path).with_duration(audio_clip.duration)
+                is_video = media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm'))
+                if is_video:
+                    clip = VideoFileClip(media_path).without_audio()
+                    # Loop video if shorter than audio
+                    if clip.duration < audio_clip.duration:
+                        clip = clip.with_effects([vfx.Loop(duration=audio_clip.duration)])
+                    else:
+                        clip = clip.with_duration(audio_clip.duration)
+                else:
+                    clip = ImageClip(media_path).with_duration(audio_clip.duration)
+                
                 scale = max(TARGET_W / clip.w, TARGET_H / clip.h)
                 clip = clip.resized(width=int(clip.w * scale), height=int(clip.h * scale))
                 clip = clip.cropped(x_center=clip.w / 2, y_center=clip.h / 2, width=TARGET_W, height=TARGET_H)
 
-            if request.add_effects: 
+            # Only apply pan/zoom to images, not videos
+            if request.add_effects and not media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm')):
                 clip = apply_pan_zoom_effect(clip).cropped(x_center=TARGET_W/2, y_center=TARGET_H/2, width=TARGET_W, height=TARGET_H)
 
             if request.add_captions:
