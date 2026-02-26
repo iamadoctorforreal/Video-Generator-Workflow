@@ -14,8 +14,8 @@ The fastest way to get the full **Storyteller Suite** up and running:
 
 1. **Clone the Repo**:
    ```bash
-   git clone https://github.com/iamadoctorforreal/kokoro.git
-   cd kokoro
+   git clone https://github.com/iamadoctorforreal/video-generator-workflow.git
+   cd video-generator-workflow
    ```
 2. **Download Models**: Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder.
 3. **Run the Suite**:
