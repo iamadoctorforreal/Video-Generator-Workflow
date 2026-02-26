@@ -30,8 +30,11 @@
     </script>
     <style type="text/tailwindcss">
         @layer base {
-            [data-mode="studio"], [data-mode="storyteller"] {
+            [data-theme="dark"][data-mode="studio"], [data-theme="dark"][data-mode="storyteller"] {
                 @apply bg-[#0f1014] text-slate-100;
+            }
+            [data-theme="light"][data-mode="studio"], [data-theme="light"][data-mode="storyteller"] {
+                @apply bg-[#f8fafc] text-slate-900;
             }
         }
         /* Mode-specific structural hiding/showing */
@@ -54,8 +57,8 @@
             --bg: #f8fafc;
             --surface: #ffffff;
             --border: rgba(0, 0, 0, 0.08);
-            --text: #0f172a;
-            --text-muted: #64748b;
+            --text: #1e293b;
+            --text-muted: #475569;
         }
 
         * {
@@ -211,7 +214,7 @@
             <!-- Settings Dropdown/Group -->
             <div class="hidden md:flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/5">
                 <select id="voiceSelect"
-                    class="bg-transparent border-none text-[10px] font-bold text-slate-400 outline-none cursor-pointer uppercase tracking-widest hover:text-indigo-400 transition-colors">
+                    class="bg-transparent border-none text-[10px] font-bold text-[var(--text-muted)] outline-none cursor-pointer uppercase tracking-widest hover:text-indigo-400 transition-colors">
                     <option value="af_bella">Bella (US Female)</option>
                     <option value="af_sky">Sky (US Female)</option>
                     <option value="am_adam">Adam (US Male)</option>
@@ -220,7 +223,7 @@
                 </select>
                 <div class="w-px h-3 bg-white/10 mx-1"></div>
                 <select id="orientationSelect"
-                    class="bg-transparent border-none text-[10px] font-bold text-slate-400 outline-none cursor-pointer uppercase tracking-widest hover:text-indigo-400 transition-colors">
+                    class="bg-transparent border-none text-[10px] font-bold text-[var(--text-muted)] outline-none cursor-pointer uppercase tracking-widest hover:text-indigo-400 transition-colors">
                     <option value="portrait">Portrait 9:16</option>
                     <option value="landscape">Landscape 16:9</option>
                 </select>
@@ -245,17 +248,17 @@
                 <div class="max-w-2xl mx-auto text-center mb-10">
                     <h1 class="text-4xl font-extrabold mb-4 font-['Playfair_Display'] italic">Write your masterpiece.
                     </h1>
-                    <p class="text-slate-400">Paste your voiceover script. Double space for new scenes.</p>
+                    <p class="text-[var(--text-muted)]">Paste your voiceover script. Double space for new scenes.</p>
                 </div>
                 <div class="glass p-8 max-w-3xl mx-auto shadow-2xl relative overflow-hidden">
                     <div
                         class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50">
                     </div>
                     <textarea id="mainScript"
-                        class="w-full h-80 bg-transparent border-none outline-none text-xl leading-relaxed resize-none text-slate-200 placeholder:text-slate-700 font-light"
+                        class="w-full h-80 bg-transparent border-none outline-none text-xl leading-relaxed resize-none text-[var(--text)] placeholder:text-[var(--text-muted)] font-light"
                         placeholder="Once upon a time..."></textarea>
                     <div class="mt-6 flex justify-between items-center border-t border-white/5 pt-6">
-                        <span class="text-xs text-slate-500 uppercase tracking-widest">Story Draft v1.0</span>
+                        <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest">Story Draft v1.0</span>
                         <button class="btn btn-primary px-10" onclick="goToRefine()">Review Scenes →</button>
                     </div>
                 </div>
@@ -265,8 +268,9 @@
             <div id="studio-stage2" class="stage">
                 <div class="flex justify-between items-end mb-10">
                     <div>
-                        <h2 class="text-2xl font-bold">Storyboard Refinement</h2>
-                        <p class="text-slate-400 text-sm">Fine-tune text and match visuals to your narrative.</p>
+                        <h2 class="text-2xl font-bold text-[var(--text)]">Storyboard Refinement</h2>
+                        <p class="text-[var(--text-muted)] text-sm">Fine-tune text and match visuals to your narrative.
+                        </p>
                     </div>
                     <button class="btn btn-primary" onclick="startProduction()">Launch Production 🚀</button>
                 </div>
@@ -282,7 +286,8 @@
                 <!-- Sidebar -->
                 <aside class="w-64 flex-shrink-0 space-y-8">
                     <div>
-                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Workspace</p>
+                        <p class="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest mb-4">
+                            Workspace</p>
                         <nav class="space-y-1">
                             <a href="#"
                                 class="flex items-center gap-3 px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-lg font-bold text-sm">
@@ -320,14 +325,14 @@
 
                     <!-- Professional View: Script Area -->
                     <div id="prof-stage1" class="stage active">
-                        <div class="bg-[#1a1c23] border border-white/5 rounded-2xl p-6 shadow-xl">
-                            <div class="flex items-center gap-4 mb-4 border-b border-white/5 pb-4">
+                        <div class="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-xl">
+                            <div class="flex items-center gap-4 mb-4 border-b border-[var(--border)] pb-4">
                                 <span
                                     class="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 material-symbols-outlined">description</span>
                                 <span class="font-bold text-sm">Voiceover Script Master</span>
                             </div>
                             <textarea id="profScript"
-                                class="w-full h-96 bg-transparent border-none outline-none text-base resize-none text-slate-300 font-mono text-sm leading-relaxed"
+                                class="w-full h-96 bg-transparent border-none outline-none text-base resize-none text-[var(--text)] font-mono text-sm leading-relaxed"
                                 oninput="syncScripts(this.value)"
                                 placeholder="Enter professional script here..."></textarea>
                             <div class="mt-4 flex justify-end">
@@ -352,15 +357,15 @@
             <main class="canvas-main">
                 <div class="max-w-2xl mx-auto">
                     <input type="text" placeholder="Title of your story..."
-                        class="w-full bg-transparent border-none outline-none text-6xl font-['Playfair_Display'] italic text-white mb-10 placeholder:text-white/5">
+                        class="w-full bg-transparent border-none outline-none text-6xl font-['Playfair_Display'] italic text-[var(--text)] mb-10 placeholder:text-[var(--text-muted)]">
                     <textarea id="storyScript"
-                        class="w-full h-[600px] bg-transparent border-none outline-none text-2xl leading-loose font-['Playfair_Display'] text-slate-400 placeholder:text-slate-800 resize-none"
+                        class="w-full h-[600px] bg-transparent border-none outline-none text-2xl leading-loose font-['Playfair_Display'] text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none"
                         oninput="syncScripts(this.value)" placeholder="Begin the narrative هنا..."></textarea>
                 </div>
             </main>
-            <aside class="canvas-sidebar border-l border-white/5 bg-white/[0.02]">
+            <aside class="canvas-sidebar border-l border-[var(--border)] bg-[var(--surface)]">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-bold text-sm uppercase tracking-widest text-slate-500">Storyboard</h3>
+                    <h3 class="font-bold text-sm uppercase tracking-widest text-[var(--text-muted)]">Storyboard</h3>
                     <button class="text-indigo-400 font-bold text-xs" onclick="startProduction()">Render Film</button>
                 </div>
                 <div id="story-sceneGrid" class="space-y-4">
@@ -415,18 +420,19 @@
         class="fixed inset-0 z-[200] bg-black/90 backdrop-blur-lg flex items-center justify-center p-8 hidden">
         <div class="glass w-full max-w-4xl max-h-full flex flex-col p-8">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Backdrop Selection</h3>
+                <h3 class="text-xl font-bold text-[var(--text)]">Backdrop Selection</h3>
                 <button onclick="closeModal()"
-                    class="material-symbols-outlined text-slate-500 hover:text-white">close</button>
+                    class="material-symbols-outlined text-[var(--text-muted)] hover:text-indigo-500">close</button>
             </div>
 
             <div class="flex gap-10">
                 <!-- Upload Zone -->
                 <div class="w-64 flex-shrink-0">
-                    <div class="border-2 border-dashed border-white/10 rounded-2xl h-48 flex flex-col items-center justify-center gap-4 hover:border-indigo-500 cursor-pointer transition-all"
+                    <div class="border-2 border-dashed border-[var(--border)] rounded-2xl h-48 flex flex-col items-center justify-center gap-4 hover:border-indigo-500 cursor-pointer transition-all"
                         onclick="document.getElementById('fileInput').click()">
-                        <span class="material-symbols-outlined text-3xl text-slate-600">upload</span>
-                        <span class="text-xs font-bold uppercase text-slate-500 text-center px-4">Upload Custom Image or
+                        <span class="material-symbols-outlined text-3xl text-[var(--text-muted)]">upload</span>
+                        <span class="text-xs font-bold uppercase text-[var(--text-muted)] text-center px-4">Upload
+                            Custom Image or
                             Video</span>
                         <input type="file" id="fileInput" hidden accept="image/*,video/*"
                             onchange="handleUpload(event)">
@@ -507,6 +513,8 @@
             if (currentMode === 'storyteller') renderStoryScenes();
         }
 
+
+
         function renderStudioScenes() {
             const grid = document.getElementById('studio-sceneGrid');
             grid.innerHTML = '';
@@ -517,7 +525,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <span class="text-[10px] font-black uppercase text-indigo-400">Scene ${idx + 1}</span>
                 </div>
-                <textarea class="w-full bg-transparent border-none text-sm text-slate-300 h-24 resize-none outline-none" onchange="scenes[${idx}].text=this.value">${s.text}</textarea>
+                <textarea class="w-full bg-transparent border-none text-sm text-[var(--text)] h-24 resize-none outline-none" onchange="scenes[${idx}].text=this.value">${s.text}</textarea>
                 <div class="image-picker" onclick="openModal(${idx})">
                     ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="image-preview" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="image-preview">`) : '<i>📸</i>'}
                     <span class="absolute bottom-2 right-2 text-[8px] bg-black/60 px-2 py-1 rounded-full uppercase">${s.media}</span>
@@ -532,18 +540,18 @@
             grid.innerHTML = '';
             scenes.forEach((s, idx) => {
                 const row = document.createElement('div');
-                row.className = 'flex gap-4 p-4 bg-[#1a1c23] border border-white/5 rounded-xl';
+                row.className = 'flex gap-4 p-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl';
                 row.innerHTML = `
-                <div class="w-32 h-20 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer border border-white/5" onclick="openModal(${idx})">
-                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="w-full h-full object-cover" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="w-full h-full object-cover">`) : '<div class="w-full h-full flex items-center justify-center text-xs text-slate-700 bg-black">NO MEDIA</div>'}
+                <div class="w-32 h-20 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer border border-[var(--border)]" onclick="openModal(${idx})">
+                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="w-full h-full object-cover" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="w-full h-full object-cover">`) : '<div class="w-full h-full flex items-center justify-center text-xs text-[var(--text-muted)] bg-black/10">NO MEDIA</div>'}
                 </div>
                 <div class="flex-1">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] font-bold text-slate-500 uppercase">Track ${idx + 1}</span>
+                        <span class="text-[9px] font-bold text-[var(--text-muted)] uppercase">Track ${idx + 1}</span>
                     </div>
-                    <textarea class="w-full bg-transparent border-none text-xs text-slate-400 h-10 resize-none overflow-hidden outline-none" onchange="scenes[${idx}].text=this.value">${s.text}</textarea>
+                    <textarea class="w-full bg-transparent border-none text-xs text-[var(--text)] h-10 resize-none overflow-hidden outline-none" onchange="scenes[${idx}].text=this.value">${s.text}</textarea>
                 </div>
-            `;
+                `;
                 grid.appendChild(row);
             });
         }
@@ -557,12 +565,12 @@
                 div.onclick = () => openModal(idx);
                 div.innerHTML = `
                 <div class="aspect-video rounded-lg overflow-hidden relative">
-                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="w-full h-full object-cover" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="w-full h-full object-cover">`) : '<div class="w-full h-full bg-black"></div>'}
+                    ${s.media !== 'detect' ? (s.type === 'video' ? `<video src="${getImageUrl(s.media)}" class="w-full h-full object-cover" muted loop autoplay></video>` : `<img src="${getImageUrl(s.media)}" class="w-full h-full object-cover">`) : '<div class="w-full h-full bg-black/20"></div>'}
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     <div class="absolute bottom-2 left-2 text-[9px] font-bold text-white uppercase">Beat ${idx + 1}</div>
                 </div>
-                <p class="text-[10px] text-slate-400 italic line-clamp-2">${s.text}</p>
-            `;
+                <p class="text-[10px] text-[var(--text-muted)] italic line-clamp-2">${s.text}</p>
+                `;
                 grid.appendChild(div);
             });
         }
