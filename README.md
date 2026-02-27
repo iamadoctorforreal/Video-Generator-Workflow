@@ -42,7 +42,7 @@ Before you start, make sure you have the following installed on your machine:
 1. **Python 3.10+**
 2. **ImageMagick**: Required by MoviePy for rendering text captions.
    - For Windows users, install ImageMagick from [here](https://imagemagick.org/script/download.php). 
-   - *Note:* Make sure to check "Install legacy utilities (e.g. convert)" during installation if prompted. You might need to adjust the `IMAGEMAGICK_BINARY` path inside `app_v3.py` if you install it in a different location than `C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe`.
+   - *Note:* Make sure to check "Install legacy utilities (e.g. convert)" during installation if prompted. You might need to adjust the `IMAGEMAGICK_BINARY` path inside `app.py` if you install it in a different location than `C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe`.
 
 ## Installation
 
@@ -78,11 +78,11 @@ Because AI model files can be huge, they are excluded from this repository via `
 
 ## Running the Application
 
-The main application file is `app_v3.py`. It runs a FastAPI backend server.
+The main application file is `app.py`. It runs a FastAPI backend server.
 
 To start the server:
 ```bash
-python app_v3.py
+python app.py
 ```
 *(This starts the Uvicorn server on `http://0.0.0.0:8000`)*
 
