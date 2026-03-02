@@ -84,7 +84,23 @@ async def list_images():
 # Initialize Whisper (Tiny is fastest for CPU)
 whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
 
+def ensure_models():
+    models = {
+        "kokoro-v1.0.onnx": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx",
+        "voices-v1.0.bin": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
+    }
+    for name, url in models.items():
+        if not os.path.exists(name):
+            print(f"📥 {name} not found. Downloading...")
+            import urllib.request
+            try:
+                urllib.request.urlretrieve(url, name)
+                print(f"✅ Successfully downloaded {name}")
+            except Exception as e:
+                print(f"❌ Failed to download {name}: {e}")
+
 # Initialize the Kokoro Pipeline
+ensure_models()
 kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin") 
 
 class Scene(BaseModel):
