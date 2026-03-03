@@ -18,11 +18,24 @@ The fastest way to get the full **Storyteller Suite** up and running:
    cd video-generator-workflow
    ```
 2. **Download Models**: Place `kokoro-v1.0.onnx` and `voices-v1.0.bin` in the root folder.
-3. **Run the Suite**:
+3. **Run the Suite for the first time**:
    ```bash
-   docker-compose down && docker-compose up --build
+   docker-compose down
+   docker-compose up --build
    ```
+   OR
+   ```bash
+   ## This is much faster
+   docker-compose down
+   docker-compose up pull  
+   ```
+   
    *(This pulls the official `okayna/video-generator-workflow:v1` image automatically.)*
+
+3. **To run the Suite subsequently after the first run**:
+   ```bash
+   docker-compose up 
+   ```
 
 ### 🎨 Access the Studio
 Once running, visit **[http://localhost:8000](http://localhost:8000)** to start creating.
