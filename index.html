@@ -1108,6 +1108,109 @@
         .mt-16 {
             margin-top: 16px;
         }
+
+        /* ─── UI POLISH & MOBILE RESPONSIVE ─────────────── */
+        body {
+            background: radial-gradient(circle at top right, #232338 0%, var(--bg) 40%);
+            background-attachment: fixed;
+        }
+
+        .studio-card,
+        .pro-sidebar,
+        .pro-main,
+        .canvas-card,
+        #gallery-mode>div {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-tabs {
+            scrollbar-width: none;
+        }
+
+        .nav-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            nav {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+                padding: 16px;
+            }
+
+            .nav-tabs {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 4px;
+                justify-content: flex-start;
+            }
+
+            .pro-layout {
+                grid-template-columns: 1fr !important;
+                gap: 16px;
+            }
+
+            .settings-grid,
+            .mini-settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            .studio-hero {
+                margin-top: 20px;
+            }
+
+            .studio-hero h1 {
+                font-size: 28px;
+            }
+
+            .studio-card,
+            .pro-sidebar,
+            .pro-main,
+            .canvas-card {
+                padding: 16px;
+            }
+
+            .scene-media-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .scene-media-row .grow {
+                width: 100%;
+            }
+
+            #main-gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+            }
+
+            .flex-row.mt-12 {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .flex-row.mt-12 button {
+                width: 100%;
+            }
+
+            .result-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
     </style>
 </head>
 
@@ -1121,6 +1224,7 @@
             <button class="nav-tab active" onclick="switchMode('studio')">STUDIO</button>
             <button class="nav-tab" onclick="switchMode('pro')">PRO</button>
             <button class="nav-tab" onclick="switchMode('canvas')">CANVAS</button>
+            <button class="nav-tab" onclick="switchMode('gallery'); loadGalleryView()">GALLERY</button>
         </div>
     </nav>
 
@@ -1673,6 +1777,20 @@
 
     </div>
 
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  GALLERY MODE                                    -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div id="gallery-mode" class="mode">
+        <div class="studio-hero">
+            <h1>Video Library</h1>
+            <p>Your previously generated stories and videos.</p>
+        </div>
+        <div id="main-gallery-grid"
+            style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:20px;padding-top:20px;">
+            <div class="preview-empty">Loading videos...</div>
+        </div>
+    </div>
+
     <!-- Image Modal -->
     <div class="modal" id="image-modal">
         <div class="modal-content">
@@ -2190,7 +2308,7 @@
                         clearInterval(state.pollingIntervals[prefix]);
                         clearInterval(state.elapsedTimers[prefix]);
                         setStatus(prefix, 'success', 'Video ready!');
-                        showResult(prefix, `/videos/${data.filename}`, data.filename);
+                        showResult(prefix, `/videos/${data.filename}`, data.filename, data.thumbnail);
                     } else if (data.status === 'failed') {
                         clearInterval(state.pollingIntervals[prefix]);
                         clearInterval(state.elapsedTimers[prefix]);
@@ -2235,13 +2353,32 @@
             txt.textContent = text;
         }
 
-        function showResult(prefix, url, filename) {
+        function showResult(prefix, url, filename, thumbnail = null) {
             const vid = document.getElementById(`${prefix}-result-video`);
             vid.src = url;
             vid.classList.add('visible');
             const dl = document.getElementById(`${prefix}-download-btn`);
             dl.href = url;
             dl.download = filename;
+
+            // Inject Thumbnail Download Button if it exists
+            let thumbBtn = document.getElementById(`${prefix}-thumb-btn`);
+            if (thumbnail) {
+                if (!thumbBtn) {
+                    thumbBtn = document.createElement('a');
+                    thumbBtn.id = `${prefix}-thumb-btn`;
+                    thumbBtn.className = 'btn btn-secondary';
+                    thumbBtn.innerHTML = '<span class="icon">image</span> Thumbnail';
+                    // Insert right after the video download button
+                    dl.parentNode.insertBefore(thumbBtn, dl.nextSibling);
+                }
+                thumbBtn.href = `/videos/${thumbnail}`;
+                thumbBtn.download = thumbnail;
+                thumbBtn.style.display = 'inline-flex';
+            } else if (thumbBtn) {
+                thumbBtn.style.display = 'none';
+            }
+
             document.getElementById(`${prefix}-result-actions`).style.display = 'flex';
             const prog = document.getElementById(`${prefix}-progress`);
             prog.classList.remove('indeterminate');
@@ -2476,6 +2613,54 @@
                 showToast('Uploaded ✓', 'success');
             } catch (e) {
                 showToast('Upload failed', 'error');
+            }
+        }
+
+        // ─────────────────────────────────────────────────
+        //  LIBRARY / GALLERY LOGIC
+        // ─────────────────────────────────────────────────
+        async function loadGalleryView() {
+            const grid = document.getElementById('main-gallery-grid');
+            grid.innerHTML = `<div class="preview-empty"><span class="icon" style="font-size:28px">hourglass_top</span><p>Loading your videos...</p></div>`;
+            try {
+                const res = await fetch('/gallery');
+                const data = await res.json();
+
+                if (!data.videos || data.videos.length === 0) {
+                    grid.innerHTML = `<div class="preview-empty"><span class="icon" style="font-size:28px;color:var(--text-muted)">movie</span><p>No successful videos found yet. Generate one!</p></div>`;
+                    return;
+                }
+
+                grid.innerHTML = data.videos.map(v => {
+                    const thumbUrl = v.thumbnail ? `/videos/${v.thumbnail}` : '';
+                    const vidUrl = `/videos/${v.filename}`;
+                    const date = new Date(v.started_at * 1000).toLocaleString();
+
+                    return `
+                    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
+                        <div style="aspect-ratio:16/9; background:#000; position:relative;">
+                            ${thumbUrl
+                            ? `<img src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="document.getElementById('mvid-${v.job_id}').style.display='block';this.style.display='none';document.getElementById('mvid-${v.job_id}').play()"/>
+                                   <video id="mvid-${v.job_id}" src="${vidUrl}" controls style="width:100%;height:100%;object-fit:contain;display:none;"></video>`
+                            : `<video src="${vidUrl}" controls preload="metadata" style="width:100%;height:100%;object-fit:contain;"></video>`}
+                        </div>
+                        <div style="padding:16px;">
+                            <h3 style="margin:0 0 4px 0; font-size:14px; font-weight:500;">${v.filename}</h3>
+                            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">${date}</div>
+                            <div style="display:flex; gap:8px;">
+                                <a href="${vidUrl}" download="${v.filename}" class="btn btn-secondary" style="flex:1; justify-content:center; padding:6px; font-size:12px;">
+                                    <span class="icon" style="font-size:14px;">download</span> Video
+                                </a>
+                                ${v.thumbnail ? `
+                                <a href="${thumbUrl}" download="${v.thumbnail}" class="btn btn-secondary" style="flex:1; justify-content:center; padding:6px; font-size:12px;" title="Download Thumbnail">
+                                    <span class="icon" style="font-size:14px;">image</span> Thumb
+                                </a>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                grid.innerHTML = `<div class="preview-empty text-xs" style="color:var(--error)">Error loading gallery: ${e.message}</div>`;
             }
         }
 

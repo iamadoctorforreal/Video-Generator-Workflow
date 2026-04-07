@@ -469,7 +469,7 @@ def _background_cleanup_loop():
             print(f"⚠️ Background cleanup error: {e}")
 
 
-def _send_webhook(job_id: str, status: str, message: str, filename: str = None):
+def _send_webhook(job_id: str, status: str, message: str, filename: str = None, thumbnail_name: str = None):
     """Sends a fire-and-forget webhook to the user's provided URL."""
     webhook_url = jobs[job_id].get("webhook_url")
     if not webhook_url:
@@ -487,6 +487,8 @@ def _send_webhook(job_id: str, status: str, message: str, filename: str = None):
     if base_url and filename:
         # e.g., https://my-app.railway.app/videos/Story_Final_abc123.mp4
         payload["video_url"] = f"{base_url.rstrip('/')}/videos/{filename}"
+        if thumbnail_name:
+            payload["thumbnail_url"] = f"{base_url.rstrip('/')}/videos/{thumbnail_name}"
     
     # Run in a separate thread so it doesn't block cleanup
     def fire():
@@ -769,10 +771,20 @@ def generate_video_task(job_id: str, request: VideoRequest):
                 final_video = final_video.with_audio(CompositeAudioClip([final_video.audio, bgm]) if final_video.audio else bgm)
 
         output_name = f"Story_Final_{job_id}.mp4"
+        thumbnail_name = f"Thumbnail_{job_id}.jpg"
+        
         final_video.write_videofile(
             output_name, fps=24, codec="libx264", audio_codec="aac",
             threads=max(1, os.cpu_count() // 2), preset="medium", logger="bar"
         )
+
+        try:
+            # Extract a frame as a thumbnail (at 2 seconds or middle of video)
+            t_thumb = min(2.0, final_video.duration / 2)
+            final_video.save_frame(thumbnail_name, t=t_thumb)
+        except Exception as e:
+            print(f"⚠️ Thumbnail generation failed: {e}")
+            thumbnail_name = None
 
         # Cleanup
         final_video.close()
@@ -782,11 +794,12 @@ def generate_video_task(job_id: str, request: VideoRequest):
         # Keep checkpoints for a bit, or move to successful jobs
         jobs[job_id]["status"] = "success"
         jobs[job_id]["filename"] = output_name
+        jobs[job_id]["thumbnail"] = thumbnail_name
         save_jobs()
         print(f"✅ Job {job_id} Complete!")
         
         # Fire webhook!
-        _send_webhook(job_id, "success", "Video rendered successfully.", output_name)
+        _send_webhook(job_id, "success", "Video rendered successfully.", output_name, thumbnail_name)
 
     except Exception as e:
         import traceback
@@ -872,6 +885,22 @@ async def queue_status():
         "queued_count": len(queued_ids),
         "queued_job_ids": queued_ids,
     }
+
+
+@app.get("/gallery")
+async def get_gallery():
+    """Returns a list of all successful jobs for the UI gallery, newest first."""
+    succ_jobs = []
+    for jid, data in jobs.items():
+        if data.get("status") == "success":
+            succ_jobs.append({
+                "job_id": jid,
+                "filename": data.get("filename"),
+                "thumbnail": data.get("thumbnail"),
+                "started_at": data.get("started_at", 0)
+            })
+    succ_jobs.sort(key=lambda x: x["started_at"], reverse=True)
+    return {"videos": succ_jobs}
 
 
 @app.delete("/cleanup-job/{job_id}")
