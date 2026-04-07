@@ -106,11 +106,12 @@ Once the server is running, you can hit the `/generate-video` endpoint with a PO
       "text": "This is the second scene.",
       "media_name": "detect"
     }
-  ]
+  ],
+  "webhook_url": "https://your-webhook.site/endpoint"
 }
 ```
 
-The server will automatically generate the audio via Kokoro-ONNX, align captions with Whisper, apply pan/zoom effects, add transitions, and mix background music, saving the final file as `Ghibli_Story_XXXX.mp4`.
+The server will automatically generate the audio via Kokoro-ONNX, align captions with Whisper, apply pan/zoom effects, add transitions, and mix background music, saving the final file as `Story_Final_XXXX.mp4` and a preview image as `Thumbnail_XXXX.jpg`.
 
 ## 🤖 Automating with n8n
 
@@ -122,13 +123,14 @@ The project now includes **n8n out-of-the-box** in the Docker container!
     `http://video-generator:8000/generate-video`
     *(No need for host.docker.internal or local IPs!)*
 
-## ⚡ Asynchronous API (Polling)
+## ⚡ Asynchronous API (Queues & Webhooks)
 
-Since video rendering takes 4–8 minutes, the API is **Asynchronous** to prevent timeouts.
+To protect the server from crashing under heavy load, the API uses a **Thread-safe Queue** and **IP Rate Limiting** (max 3 pending jobs per IP). Since rendering takes 4–8 minutes, the API is **Asynchronous**.
 
-1.  **POST `/generate-video`**: Starts the job and immediately returns a `job_id`.
-2.  **GET `/video-status/{job_id}`**: Returns the current status (`pending`, `processing`, `success`, or `failed`).
-3.  **Static Serving**: Once successful, videos can be accessed at `http://localhost:8000/videos/{filename}`.
+1.  **POST `/generate-video`**: Starts the job and returns a `job_id`.
+2.  **GET `/video-status/{job_id}`**: Returns the current status (`queued`, `processing`, `success`, or `failed`). If queued, it also returns your `queue_position`.
+3.  **Webhooks**: If you provide a `webhook_url` in the initial payload, the server will fire a POST request to it when the video succeeds or fails, including absolute URLs for the video and thumbnail.
+4.  **Static Serving**: Once successful, videos can be accessed at `http://localhost:8000/videos/{filename}`. You can also view all past generated videos via the `/gallery` endpoint.
 
 ## 📦 Docker Hub Image
 The official image is hosted at:
