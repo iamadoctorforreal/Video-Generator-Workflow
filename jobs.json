@@ -1,0 +1,15 @@
+{
+    "2b14306a": {
+        "status": "assembling",
+        "started_at": 1772969373.9140277,
+        "total_scenes": 17,
+        "current_scene": 17
+    },
+    "b3eca0e4": {
+        "status": "success",
+        "started_at": 1772982374.8404403,
+        "total_scenes": 10,
+        "current_scene": 10,
+        "filename": "Story_Final_b3eca0e4.mp4"
+    }
+}

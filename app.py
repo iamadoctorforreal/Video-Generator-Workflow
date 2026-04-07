@@ -1,24 +1,31 @@
 import os
+
+# OPTIMIZATION: Limit MKL/OMP threads to prevent memory fragmentation/failures on Windows
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 import re
 import glob
 import uuid
 import random
 import time
+import json
 import numpy as np
 from faster_whisper import WhisperModel
 import gc
 import soundfile as sf
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 import shutil
 from pydantic import BaseModel
-#from kokoro import KPipeline
+from typing import Optional
 from kokoro_onnx import Kokoro
 from moviepy import (
     ImageClip, VideoFileClip, concatenate_videoclips, AudioFileClip,
     TextClip, CompositeVideoClip, ColorClip, vfx, CompositeAudioClip, afx
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import platform
@@ -28,12 +35,27 @@ if platform.system() == "Windows":
     os.environ["IMAGEMAGICK_BINARY"] = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"
     FONT = r'C:\Windows\Fonts\arialbd.ttf'
 else:
-    # Linux / Docker
     os.environ["IMAGEMAGICK_BINARY"] = "/usr/bin/convert"
     FONT = '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
 
-# In-memory job storage (Resets on restart)
-jobs = {}
+# Job persistence storage
+JOBS_FILE = "jobs.json"
+
+def load_jobs():
+    if os.path.exists(JOBS_FILE):
+        try:
+            with open(JOBS_FILE, "r") as f:
+                return json.load(f)
+        except: return {}
+    return {}
+
+def save_jobs():
+    try:
+        with open(JOBS_FILE, "w") as f:
+            json.dump(jobs, f, indent=4)
+    except: pass
+
+jobs = load_jobs()
 
 app = FastAPI()
 
@@ -45,44 +67,106 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve generated videos statically (so the UI can play them)
+# Serve generated videos statically
 app.mount("/videos", StaticFiles(directory="."), name="videos")
 
-# Image Directories
+# Directories
 UPLOAD_DIR = "temp_uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs("images", exist_ok=True)
+MUSIC_UPLOAD_DIR = "uploaded_music"
+VOICEOVER_UPLOAD_DIR = "uploaded_voiceovers"
+CHECKPOINT_DIR = "job_checkpoints"
 
-# Mount media folders for the UI to preview
+for d in [UPLOAD_DIR, MUSIC_UPLOAD_DIR, VOICEOVER_UPLOAD_DIR, "images", CHECKPOINT_DIR]:
+    os.makedirs(d, exist_ok=True)
+
+# Mount media folders
 app.mount("/static/images", StaticFiles(directory="images"), name="static_images")
 app.mount("/static/uploads", StaticFiles(directory=UPLOAD_DIR), name="static_uploads")
+app.mount("/static/music", StaticFiles(directory=MUSIC_UPLOAD_DIR), name="static_music")
+
 
 @app.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
-    # Support images and videos
     exts = ('.png', '.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.webm')
     if not file.filename.lower().endswith(exts):
         raise HTTPException(status_code=400, detail="Unsupported file type")
-        
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"filename": file.filename, "url": f"/static/uploads/{file.filename}"}
 
+
+@app.post("/upload-music")
+async def upload_music(file: UploadFile = File(...)):
+    """Upload a custom background music file."""
+    exts = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+    if not file.filename.lower().endswith(exts):
+        raise HTTPException(status_code=400, detail="Unsupported audio type. Use mp3, wav, ogg, m4a, or aac.")
+    file_path = os.path.join(MUSIC_UPLOAD_DIR, file.filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": file.filename, "url": f"/static/music/{file.filename}"}
+
+
+@app.post("/upload-voiceover")
+async def upload_voiceover(file: UploadFile = File(...)):
+    """Upload a custom voiceover audio file."""
+    exts = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+    if not file.filename.lower().endswith(exts):
+        raise HTTPException(status_code=400, detail="Unsupported audio type.")
+    # Use a unique name to avoid collisions
+    unique_name = f"vo_{uuid.uuid4().hex[:8]}_{file.filename}"
+    file_path = os.path.join(VOICEOVER_UPLOAD_DIR, unique_name)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": unique_name, "url": f"/uploaded_voiceovers/{unique_name}"}
+
+# Mount voiceover dir too
+app.mount("/uploaded_voiceovers", StaticFiles(directory=VOICEOVER_UPLOAD_DIR), name="uploaded_voiceovers")
+
+
 @app.get("/list-images")
 async def list_images():
     def get_files(folder, path_prefix):
         exts = ('.png', '.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.webm')
-        return [{"name": f, "url": f"{path_prefix}/{f}", "type": "video" if f.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) else "image"} 
-                for f in os.listdir(folder) if f.lower().endswith(exts)]
-    
+        files = []
+        for f in sorted(os.listdir(folder)):
+            if f.lower().endswith(exts):
+                files.append({
+                    "name": f,
+                    "url": f"{path_prefix}/{f}",
+                    "type": "video" if f.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) else "image"
+                })
+        return files
+
     return {
         "default": get_files("images", "/static/images"),
         "uploads": get_files(UPLOAD_DIR, "/static/uploads")
     }
 
-# Initialize Whisper (Tiny is fastest for CPU)
+
+@app.get("/list-music")
+async def list_music():
+    """List all available background music files."""
+    exts = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+    files = []
+    # Include bundled default music
+    for f in ["bg_music.mp3", "bg_music2.mp3"]:
+        if os.path.exists(f):
+            files.append({"name": f, "url": f"/static_root/{f}", "source": "default"})
+    # Include uploaded music
+    for f in sorted(os.listdir(MUSIC_UPLOAD_DIR)):
+        if f.lower().endswith(exts):
+            files.append({"name": f, "url": f"/static/music/{f}", "source": "uploaded"})
+    return {"music": files}
+
+# Serve root directory files (for default bg_music.mp3 access)
+app.mount("/static_root", StaticFiles(directory="."), name="static_root")
+
+
+# Initialize Whisper
 whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+
 
 def ensure_models():
     models = {
@@ -99,42 +183,58 @@ def ensure_models():
             except Exception as e:
                 print(f"❌ Failed to download {name}: {e}")
 
-# Initialize the Kokoro Pipeline
+
 ensure_models()
-kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin") 
+kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
+
 
 class Scene(BaseModel):
     text: str
-    media_name: str 
+    media_name: str
+
 
 class VideoRequest(BaseModel):
     scenes: list[Scene]
     voice: str = "af_bella"
+
+    # Voiceover settings
+    generate_voiceover: bool = True        # If False, no TTS is generated
+    uploaded_voiceover: Optional[str] = None  # filename of uploaded voiceover (used when generate_voiceover=False)
+
+    # Caption settings
     add_captions: bool = True
+    caption_position: str = "bottom"       # "bottom", "center", "top"
+
+    # Background music settings
+    add_background_music: bool = True
+    bg_music_file: Optional[str] = None    # filename from uploaded_music dir, or "bg_music.mp3" / "bg_music2.mp3"
+    bg_music_volume: float = 0.12          # 0.0 to 1.0
+
+    # Video clip audio settings
+    keep_clip_audio: bool = False          # Whether to preserve original video clip audio
+    clip_audio_volume: float = 0.4         # Volume of the original clip audio (0.0 to 1.0)
+
+    # Visual settings
     add_effects: bool = True
-    caption_position: str = "bottom"  # options: "bottom", "center", "top"
-    orientation: str = "portrait"  # "portrait" or "landscape"
+    orientation: str = "portrait"          # "portrait" or "landscape"
+    job_id: Optional[str] = None           # For resuming a completed job
+
 
 def sanitize_text_for_tts(text):
     if not text: return "..."
     text = text.replace("[sigh]", " haaaahhh... ").replace("[pause]", " . . . ")
     text = text.encode("ascii", "ignore").decode()
     text = text.replace("...", ".").replace("—", "-").replace("–", "-")
-    
     replacements = {
-         'Aiko': 'Eye-ko', 
-         'Haru': 'Ha-roo', 
-         'Yuki': 'You-kee', 
-         'Elara': 'Eh-lah-rah', 
-         'Midasis': 'Mih-dah-sis', 
-         'cicadas': 'si-kay-dahs'
+        'Aiko': 'Eye-ko', 'Haru': 'Ha-roo', 'Yuki': 'You-kee',
+        'Elara': 'Eh-lah-rah', 'Midasis': 'Mih-dah-sis', 'cicadas': 'si-kay-dahs'
     }
-    
     text = text.replace('"', '').replace("'", "")
     for original, replacement in replacements.items():
         regEx = re.compile(re.escape(original), re.IGNORECASE)
         text = regEx.sub(replacement, text)
     return text.strip()
+
 
 def get_word_timestamps(audio_path, script_text=None):
     import difflib
@@ -159,26 +259,20 @@ def get_word_timestamps(audio_path, script_text=None):
         for word in segment.words:
             w = word.word.strip()
             if w:
-                words_list.append({
-                    "word": correct_word(w),
-                    "start": word.start,
-                    "end": word.end
-                })
+                words_list.append({"word": correct_word(w), "start": word.start, "end": word.end})
     return words_list
+
 
 def create_dynamic_captions(words, clip_size, caption_position="bottom"):
     if not words:
         return []
-
     word_clips = []
     w, h = clip_size
     position_map = {"bottom": h * 0.78, "center": h * 0.50, "top": h * 0.15}
     y_pos = position_map.get(caption_position, h * 0.78)
-
     GAP = 10
     GROUP_SIZE = 4 if w > 1000 else 2
     MAX_WIDTH = int(w * 0.90)
-
     groups = []
     i = 0
     while i < len(words):
@@ -197,7 +291,6 @@ def create_dynamic_captions(words, clip_size, caption_position="bottom"):
                     m = TextClip(text=txt, font=FONT, font_size=font_size, stroke_color='black', stroke_width=4, method='label', margin=margin)
                     measured.append({'txt': txt, 'obj': word_obj, 'w': int(m.w), 'h': int(m.h)})
                     m.close()
-
                 total_w = sum(m['w'] for m in measured) + GAP * (len(measured) - 1)
                 if total_w <= MAX_WIDTH: break
                 font_size = max(36, int(font_size * 0.88))
@@ -239,6 +332,7 @@ def create_dynamic_captions(words, clip_size, caption_position="bottom"):
         except: continue
     return word_clips
 
+
 def apply_pan_zoom_effect(clip):
     w, h = clip.size
     duration = clip.duration
@@ -248,124 +342,271 @@ def apply_pan_zoom_effect(clip):
     if effect == 'pan_right': return clip.with_position(lambda t: (-(t / duration) * w * 0.1, 0))
     return clip.with_position(lambda t: ((t / duration) * w * 0.1, 0))
 
+
 def auto_detect_images(images_folder, num_scenes):
     def natural_keys(text): return [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)]
     try:
-        files = [f for f in os.listdir(images_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        files = [f for f in os.listdir(images_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.mp4', '.mov', '.avi', '.webm'))]
         files.sort(key=natural_keys)
         return files[:num_scenes]
     except: return []
 
+
+def resolve_music_path(bg_music_file):
+    """Find the actual path for a music file."""
+    if not bg_music_file:
+        # Default fallback
+        for default in ["bg_music.mp3", "bg_music2.mp3"]:
+            if os.path.exists(default):
+                return os.path.join(os.getcwd(), default)
+        return None
+    # Check uploaded music dir first
+    uploaded_path = os.path.join(MUSIC_UPLOAD_DIR, bg_music_file)
+    if os.path.exists(uploaded_path):
+        return uploaded_path
+    # Check root dir for defaults
+    root_path = os.path.join(os.getcwd(), bg_music_file)
+    if os.path.exists(root_path):
+        return root_path
+    return None
+
+
 def generate_video_task(job_id: str, request: VideoRequest):
     try:
         jobs[job_id]["status"] = "processing"
-        final_clips = []
-        MUSIC_PATH = os.path.join(os.getcwd(), "bg_music.mp3")
-        BASE_MEDIA_PATH = os.path.join(os.getcwd(), "images")
+        jobs[job_id]["total_scenes"] = len(request.scenes)
+        save_jobs()
         
-        print(f"\n🎬 Job {job_id}: Generation Started.")
+        BASE_MEDIA_PATH = os.path.join(os.getcwd(), "images")
+        print(f"\n🎬 Job {job_id}: Generation Started. Total Scenes: {len(request.scenes)}")
+
+        # --- Handle single uploaded voiceover for ALL scenes ---
+        single_voiceover_clip = None
+        single_voiceover_duration = None
+        if not request.generate_voiceover and request.uploaded_voiceover:
+            vo_path = os.path.join(VOICEOVER_UPLOAD_DIR, request.uploaded_voiceover)
+            if os.path.exists(vo_path):
+                single_voiceover_clip = AudioFileClip(vo_path)
+                single_voiceover_duration = single_voiceover_clip.duration
+
         auto_detected_images = auto_detect_images(BASE_MEDIA_PATH, len(request.scenes))
+        scene_durations = None
+        if single_voiceover_clip and single_voiceover_duration:
+            per_scene = single_voiceover_duration / len(request.scenes)
+            scene_durations = [per_scene] * len(request.scenes)
+
+        # Pre-compute captions for uploaded voiceover if needed
+        uploaded_vo_words_by_scene = {}
+        if not request.generate_voiceover and single_voiceover_clip and request.add_captions and scene_durations:
+            vo_path = os.path.join(VOICEOVER_UPLOAD_DIR, request.uploaded_voiceover)
+            try:
+                all_words = get_word_timestamps(vo_path)
+                scene_start = 0.0
+                for si, dur in enumerate(scene_durations):
+                    scene_end = scene_start + dur
+                    scene_words = [
+                        {**w, "start": w["start"] - scene_start, "end": w["end"] - scene_start}
+                        for w in all_words if scene_start <= w["start"] < scene_end
+                    ]
+                    uploaded_vo_words_by_scene[si] = scene_words
+                    scene_start = scene_end
+            except Exception as e:
+                print(f"⚠️ Caption transcription failed: {e}")
+
+        checkpoint_files = []
 
         for i, scene in enumerate(request.scenes, 1):
-            clean_text = sanitize_text_for_tts(scene.text)
-            media_file = auto_detected_images[i-1] if (scene.media_name == "detect" and i-1 < len(auto_detected_images)) else scene.media_name
-
-            audio_path = f"temp_{job_id}_{i}.wav"
-            try:
-                samples, sample_rate = kokoro.create(clean_text, voice=request.voice, speed=1.0, lang="en-us")
-                sf.write(audio_path, samples, sample_rate)
-                audio_clip = AudioFileClip(audio_path)
-            except Exception as e:
-                audio_path = f"temp_{job_id}_{i}_silence.wav"
-                sf.write(audio_path, np.zeros(int(24000 * 3)), 24000)
-                audio_clip = AudioFileClip(audio_path)
-             
-            word_data = get_word_timestamps(audio_path, script_text=scene.text)
+            jobs[job_id]["current_scene"] = i
+            save_jobs()
             
-            # Find the media file in either 'images' or 'temp_uploads'
+            cp_path = os.path.join(CHECKPOINT_DIR, f"cp_{job_id}_scene_{i}.mp4")
+            
+            if os.path.exists(cp_path):
+                print(f"⏭️ Skipping Scene {i}/{len(request.scenes)} - Checkpoint found.")
+                checkpoint_files.append(cp_path)
+                continue
+
+            print(f"🎥 Processing Scene {i}/{len(request.scenes)}")
+            
+            # --- Determine audio duration for this scene ---
+            audio_clip = None
+            word_data = []
+
+            if request.generate_voiceover:
+                clean_text = sanitize_text_for_tts(scene.text)
+                audio_path = f"temp_{job_id}_{i}.wav"
+                try:
+                    samples, sample_rate = kokoro.create(clean_text, voice=request.voice, speed=1.0, lang="en-us")
+                    sf.write(audio_path, samples, sample_rate)
+                    audio_clip = AudioFileClip(audio_path)
+                except Exception as e:
+                    print(f"⚠️ TTS failed for scene {i}: {e}")
+                    audio_path = f"temp_{job_id}_{i}_silence.wav"
+                    sf.write(audio_path, np.zeros(int(24000 * 3)), 24000)
+                    audio_clip = AudioFileClip(audio_path)
+
+                if request.add_captions:
+                    word_data = get_word_timestamps(audio_path, script_text=scene.text)
+            elif single_voiceover_clip and scene_durations:
+                if request.add_captions:
+                    word_data = uploaded_vo_words_by_scene.get(i - 1, [])
+
+            scene_dur = audio_clip.duration if audio_clip else (scene_durations[i-1] if scene_durations else 4.0)
+
+            # --- Build visual clip ---
+            media_file = auto_detected_images[i-1] if (scene.media_name == "detect" and i-1 < len(auto_detected_images)) else scene.media_name
             media_path = None
             if media_file:
-                # Check default images folder
                 p1 = os.path.join(BASE_MEDIA_PATH, media_file)
-                # Check temp uploads folder
                 p2 = os.path.join(UPLOAD_DIR, media_file)
-                
-                if os.path.exists(p1):
-                    media_path = p1
-                elif os.path.exists(p2):
-                    media_path = p2
+                if os.path.exists(p1): media_path = p1
+                elif os.path.exists(p2): media_path = p2
 
             TARGET_W = 720 if request.orientation == "portrait" else 1280
             TARGET_H = 1280 if request.orientation == "portrait" else 720
+            is_video_clip = media_file and media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) if media_file else False
 
+            raw_clip = None
             if not media_path or not os.path.exists(media_path):
-                clip = ColorClip(size=(TARGET_W, TARGET_H), color=(30, 30, 30)).with_duration(audio_clip.duration)
+                scene_clip = ColorClip(size=(TARGET_W, TARGET_H), color=(30, 30, 30)).with_duration(scene_dur)
             else:
-                is_video = media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm'))
-                if is_video:
-                    clip = VideoFileClip(media_path).without_audio()
-                    # Loop video if shorter than audio
-                    if clip.duration < audio_clip.duration:
-                        clip = clip.with_effects([vfx.Loop(duration=audio_clip.duration)])
+                if is_video_clip:
+                    raw_clip = VideoFileClip(media_path)
+                    clip_audio_orig = raw_clip.audio if (request.keep_clip_audio and raw_clip.audio) else None
+                    scene_clip = raw_clip.without_audio()
+                    if scene_clip.duration < scene_dur:
+                        scene_clip = scene_clip.with_effects([vfx.Loop(duration=scene_dur)])
                     else:
-                        clip = clip.with_duration(audio_clip.duration)
+                        scene_clip = scene_clip.with_duration(scene_dur)
+                        
+                    if clip_audio_orig:
+                        if clip_audio_orig.duration < scene_dur:
+                            clip_audio_orig = clip_audio_orig.with_effects([afx.AudioLoop(duration=scene_dur)])
+                        else:
+                            clip_audio_orig = clip_audio_orig.with_duration(scene_dur)
+
+                    if (request.add_captions and not word_data and not request.generate_voiceover and not single_voiceover_clip and raw_clip.audio):
+                        try:
+                            cap_audio_path = f"temp_{job_id}_{i}_caps.wav"
+                            raw_clip.audio.write_audiofile(cap_audio_path, logger=None)
+                            word_data = get_word_timestamps(cap_audio_path)
+                            os.remove(cap_audio_path)
+                        except: pass
                 else:
-                    clip = ImageClip(media_path).with_duration(audio_clip.duration)
-                
-                scale = max(TARGET_W / clip.w, TARGET_H / clip.h)
-                clip = clip.resized(width=int(clip.w * scale), height=int(clip.h * scale))
-                clip = clip.cropped(x_center=clip.w / 2, y_center=clip.h / 2, width=TARGET_W, height=TARGET_H)
+                    scene_clip = ImageClip(media_path).with_duration(scene_dur)
+                    clip_audio_orig = None
 
-            # Only apply pan/zoom to images, not videos
-            if request.add_effects and not media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm')):
-                clip = apply_pan_zoom_effect(clip).cropped(x_center=TARGET_W/2, y_center=TARGET_H/2, width=TARGET_W, height=TARGET_H)
+                scale = max(TARGET_W / scene_clip.w, TARGET_H / scene_clip.h)
+                scene_clip = scene_clip.resized(width=int(scene_clip.w * scale), height=int(scene_clip.h * scale))
+                scene_clip = scene_clip.cropped(x_center=scene_clip.w / 2, y_center=scene_clip.h / 2, width=TARGET_W, height=TARGET_H)
 
-            if request.add_captions:
-                word_clips = create_dynamic_captions(word_data, (clip.w, clip.h), caption_position=request.caption_position)
-                if word_clips: clip = CompositeVideoClip([clip] + word_clips)
+            if request.add_effects and not is_video_clip:
+                scene_clip = apply_pan_zoom_effect(scene_clip).cropped(x_center=TARGET_W/2, y_center=TARGET_H/2, width=TARGET_W, height=TARGET_H)
 
-            final_clips.append(clip.with_audio(audio_clip))
-            gc.collect()
+            if request.add_captions and word_data:
+                word_clips = create_dynamic_captions(word_data, (scene_clip.w, scene_clip.h), caption_position=request.caption_position)
+                if word_clips:
+                    scene_clip = CompositeVideoClip([scene_clip] + word_clips)
+
+            if audio_clip:
+                if is_video_clip and request.keep_clip_audio and clip_audio_orig:
+                    mixed = CompositeAudioClip([audio_clip, clip_audio_orig.with_volume_scaled(request.clip_audio_volume)])
+                    scene_clip = scene_clip.with_audio(mixed)
+                else:
+                    scene_clip = scene_clip.with_audio(audio_clip)
+            elif is_video_clip and request.keep_clip_audio and clip_audio_orig:
+                scene_clip = scene_clip.with_audio(clip_audio_orig.with_volume_scaled(request.clip_audio_volume))
+
+            # RENDER SCENE CHECKPOINT
+            scene_clip.write_videofile(
+                cp_path, fps=24, codec="libx264", audio_codec="aac",
+                threads=1, logger=None, preset="ultrafast" # Threads=1 for memory stability
+            )
             
+            # Explicit cleanup
+            scene_clip.close()
+            if audio_clip: audio_clip.close()
+            if 'clip_audio_orig' in locals() and clip_audio_orig: clip_audio_orig.close()
+            if raw_clip: raw_clip.close()
+            
+            checkpoint_files.append(cp_path)
+            gc.collect()
+
+        # --- FINAL ASSEMBLY ---
+        jobs[job_id]["status"] = "assembling"
+        save_jobs()
+        print(f"🔗 Assembling Scenes for Job {job_id}...")
+        
+        # Small delay to ensure all file handles are released by the OS
+        time.sleep(2)
+        
+        final_clips = [VideoFileClip(f) for f in checkpoint_files]
         if request.add_effects and len(final_clips) > 1:
-            transitioned = [final_clips[0]]
-            for i in range(1, len(final_clips)):
-                transitioned.append(final_clips[i].with_effects([vfx.FadeIn(duration=0.6)]))
-            final_clips = transitioned
-
+            for k in range(1, len(final_clips)):
+                # Only fade in if it's not the first clip
+                final_clips[k] = final_clips[k].with_effects([vfx.FadeIn(duration=0.6)])
+        
+        # Use method="compose" which is more robust for heterogeneous audio/video clips
         final_video = concatenate_videoclips(final_clips, method="compose")
-        if os.path.exists(MUSIC_PATH):
-            bg_music = AudioFileClip(MUSIC_PATH).with_effects([afx.AudioLoop(duration=final_video.duration)])
-            bg_music = bg_music.with_volume_scaled(0.12)
-            final_video = final_video.with_audio(CompositeAudioClip([final_video.audio, bg_music]))
 
-        output_name = f"Ghibli_Story_{job_id}.mp4"
+        # Handle globally uploaded voiceover if present
+        if single_voiceover_clip and not request.generate_voiceover:
+            vo = single_voiceover_clip
+            vo = vo.with_duration(min(vo.duration, final_video.duration))
+            final_video = final_video.with_duration(vo.duration)
+            layers = [vo]
+            if final_video.audio and request.keep_clip_audio:
+                layers.append(final_video.audio.with_volume_scaled(request.clip_audio_volume))
+            final_video = final_video.with_audio(CompositeAudioClip(layers))
+
+        if request.add_background_music:
+            m_path = resolve_music_path(request.bg_music_file)
+            if m_path:
+                bgm = AudioFileClip(m_path).with_effects([afx.AudioLoop(duration=final_video.duration)])
+                bgm = bgm.with_volume_scaled(request.bg_music_volume)
+                final_video = final_video.with_audio(CompositeAudioClip([final_video.audio, bgm]) if final_video.audio else bgm)
+
+        output_name = f"Story_Final_{job_id}.mp4"
         final_video.write_videofile(
-            output_name, fps=24, codec="libx264", audio_codec="aac", 
-            threads=1, temp_audiofile=f"temp-audio-{job_id}.m4a",
-            remove_temp=True, preset="ultrafast", logger=None
+            output_name, fps=24, codec="libx264", audio_codec="aac",
+            threads=max(1, os.cpu_count() // 2), preset="medium", logger="bar"
         )
 
-        for f in glob.glob(f"temp_{job_id}_*.wav"):
-            try: os.remove(f)
-            except: pass
+        # Cleanup
+        final_video.close()
+        for c in final_clips: c.close()
+        if single_voiceover_clip: single_voiceover_clip.close()
         
+        # Keep checkpoints for a bit, or move to successful jobs
         jobs[job_id]["status"] = "success"
-        jobs[job_id]["video_path"] = os.path.abspath(output_name)
         jobs[job_id]["filename"] = output_name
+        save_jobs()
         print(f"✅ Job {job_id} Complete!")
-        
+
     except Exception as e:
-        print(f"❌ ERROR in Job {job_id}: {e}")
+        import traceback
+        traceback.print_exc()
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
+        save_jobs()
+
 
 @app.post("/generate-ghibli-video")
 async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
-    job_id = str(uuid.uuid4())[:8]
-    jobs[job_id] = {"status": "pending", "started_at": time.time()}
+    job_id = request.job_id
+    if not job_id or job_id not in jobs:
+        job_id = str(uuid.uuid4())[:8]
+        jobs[job_id] = {"status": "pending", "started_at": time.time()}
+    else:
+        # Resuming existing job
+        jobs[job_id]["status"] = "pending"
+        jobs[job_id]["error"] = None
+        # Keep started_at to maintain total elapsed time if desired, or reset
+    
+    save_jobs()
     background_tasks.add_task(generate_video_task, job_id, request)
-    return {"status": "accepted", "job_id": job_id, "message": "Video generation started in background"}
+    return {"status": "accepted", "job_id": job_id, "message": "Video generation started/resumed"}
+
 
 @app.get("/video-status/{job_id}")
 async def get_status(job_id: str):
@@ -376,9 +617,16 @@ async def get_status(job_id: str):
         response["elapsed_seconds"] = round(time.time() - response["started_at"], 2)
     return response
 
+
+@app.get("/favicon.png")
+async def get_favicon():
+    return FileResponse("favicon.png")
+
+
 @app.get("/")
 async def serve_ui():
     return FileResponse("index.html")
+
 
 if __name__ == "__main__":
     import uvicorn

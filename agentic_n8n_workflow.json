@@ -1,0 +1,140 @@
+{
+    "name": "Groq Agentic Video Workflow",
+    "nodes": [
+        {
+            "parameters": {
+                "public": true,
+                "options": {}
+            },
+            "id": "1",
+            "name": "Chat Trigger",
+            "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+            "typeVersion": 1,
+            "position": [
+                180,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "options": {
+                    "systemMessage": "You are 'Director AI', an expert video producer and storyteller.\nYour goal is to guide the user to create a complete video concept step-by-step, and when they are ready, trigger the final video generation.\n\n### STEP A - Lock Visual Style\nAsk the user what visual style they are creating in (e.g., 3D Animation, Photorealistic, Anime, Cartoon, etc.). Wait for their reply.\n\n### STEP B - Define Project Type\nAsk what type of video they are creating (e.g., Story video, Explainer video, Cinematic Short Film, etc.). Wait for their reply.\nIMPORTANT RULES:\n- 'Story video' requires exactly 1 human and 1 animal character.\n- 'Cinematic Short Film' allows multiple humans and no animals.\nIf the user requests something that violates these rules, explain the restriction and ask if they want to switch project types (e.g., switch to Cinematic Short Film).\n\n### STEP C - Master Prompt\nGenerate a detailed Master Prompt containing:\n- Title & Concept\n- Story Summary\n- Visual Style, Environment, Camera Feel, Animation Style\n- Character Sheets\n- Scene Prompts (List scenes 1 to N, describing visuals)\n- Text-to-Speech Script (Exactly one line of text per scene)\n\n### STEP D - Refinement & Generation\nAsk the user to review the Master Prompt. If they want to edit anything (e.g. \"Make the traveler female\"), apply the changes while keeping rules in mind and regenerate the Master Prompt.\n\nOnce they approve, you MUST use the 'Generate_Video_API' tool to send the data to the backend. Pass a JSON payload with an array of 'scenes' (each with 'text' and 'media_name': 'detect'), a 'voice' (like 'af_bella'), and an 'orientation' (like 'landscape'). If the user uploads manual images during the chat, acknowledge them and tell them the backend will process the uploaded images. If image API fails manually, prompt them to upload images to the chat!"
+                }
+            },
+            "id": "2",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1.6,
+            "position": [
+                400,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "modelName": "models/llama3-70b-8192",
+                "options": {
+                    "temperature": 0.7
+                }
+            },
+            "id": "3",
+            "name": "Groq Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+            "typeVersion": 1,
+            "position": [
+                380,
+                460
+            ],
+            "credentials": {
+                "groqApi": {
+                    "id": "",
+                    "name": "Groq account"
+                }
+            }
+        },
+        {
+            "parameters": {},
+            "id": "4",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1.2,
+            "position": [
+                520,
+                460
+            ]
+        },
+        {
+            "parameters": {
+                "name": "Generate_Video_API",
+                "description": "Call this tool ONLY when the user is completely satisfied and approves the prompt. Pass the final JSON object.",
+                "method": "POST",
+                "url": "http://video-generator:8000/generate-ghibli-video",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ $parameter.query }}",
+                "options": {
+                    "timeout": 3600000
+                }
+            },
+            "id": "5",
+            "name": "Generate Video Tool",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                680,
+                460
+            ]
+        }
+    ],
+    "connections": {
+        "Chat Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Groq Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Video Tool": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "b1cd2ac2-64ec-4f2a-b73a-44671e367809"
+}
