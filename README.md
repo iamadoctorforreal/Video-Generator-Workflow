@@ -1,4 +1,4 @@
-# Kokoro Video Generator: The Storyteller Suite 🎬✨
+# The Storyteller Suite 🎬✨
 
 This is a premium, automated video generation platform. It transforms simple voiceover scripts into cinematic videos using the **Kokoro-ONNX** TTS engine, `faster-whisper` for synchronization, and a custom **Storyteller Studio** UI.
 
@@ -87,7 +87,7 @@ python app.py
 *(This starts the Uvicorn server on `http://0.0.0.0:8000`)*
 
 ### API Usage
-Once the server is running, you can hit the `/generate-ghibli-video` endpoint with a POST request containing JSON data to generate a video.
+Once the server is running, you can hit the `/generate-video` endpoint with a POST request containing JSON data to generate a video.
 
 **Example Request:**
 ```json
@@ -119,14 +119,14 @@ The project now includes **n8n out-of-the-box** in the Docker container!
 1.  **Open n8n:** Go to [http://localhost:5678](http://localhost:5678).
 2.  **Import Workflow:** Import the `n8n_workflow.json` file from the root directory.
 3.  **Internal Connection:** For the **HTTP Request** node, use this internal URL:
-    `http://video-generator:8000/generate-ghibli-video`
+    `http://video-generator:8000/generate-video`
     *(No need for host.docker.internal or local IPs!)*
 
 ## ⚡ Asynchronous API (Polling)
 
 Since video rendering takes 4–8 minutes, the API is **Asynchronous** to prevent timeouts.
 
-1.  **POST `/generate-ghibli-video`**: Starts the job and immediately returns a `job_id`.
+1.  **POST `/generate-video`**: Starts the job and immediately returns a `job_id`.
 2.  **GET `/video-status/{job_id}`**: Returns the current status (`pending`, `processing`, `success`, or `failed`).
 3.  **Static Serving**: Once successful, videos can be accessed at `http://localhost:8000/videos/{filename}`.
 

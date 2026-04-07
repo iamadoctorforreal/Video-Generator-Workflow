@@ -85,7 +85,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://video-generator:8000/generate-ghibli-video",
+        "url": "http://video-generator:8000/generate-video",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",

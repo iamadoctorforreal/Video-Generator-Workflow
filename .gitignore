@@ -41,3 +41,11 @@ config.json
 voices.json
 *.bin
 kokoro-v1.0.onnx
+
+job_checkpoints/
+temp_uploads/
+uploaded_music/
+uploaded_voiceovers/
+url_media_cache/
+*.wav
+*.mp4

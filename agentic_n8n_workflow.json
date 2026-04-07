@@ -68,7 +68,7 @@
                 "name": "Generate_Video_API",
                 "description": "Call this tool ONLY when the user is completely satisfied and approves the prompt. Pass the final JSON object.",
                 "method": "POST",
-                "url": "http://video-generator:8000/generate-ghibli-video",
+                "url": "http://video-generator:8000/generate-video",
                 "sendBody": true,
                 "specifyBody": "json",
                 "jsonBody": "={{ $parameter.query }}",

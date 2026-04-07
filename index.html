@@ -2125,15 +2125,25 @@
             }, 1000);
 
             try {
-                const res = await fetch('/generate-ghibli-video', {
+                const res = await fetch('/generate-video', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 if (!res.ok) throw new Error(await res.text());
-                const { job_id } = await res.json();
+                const { job_id, queue_position } = await res.json();
                 state.lastJobId[prefix] = job_id;
-                setStatus(prefix, 'processing', 'Rendering your video...');
+
+                // Show initial queued status
+                const prog = document.getElementById(`${prefix}-progress`);
+                prog.classList.add('indeterminate'); // Pulsing animation while queued
+
+                if (queue_position > 1) {
+                    setStatus(prefix, 'queued', `Queued (Position: ${queue_position})`);
+                } else {
+                    setStatus(prefix, 'processing', 'Rendering your video...');
+                }
+
                 pollStatus(prefix, job_id);
             } catch (e) {
                 clearInterval(state.elapsedTimers[prefix]);
@@ -2188,8 +2198,22 @@
                         document.getElementById(`${prefix}-result-actions`).style.display = 'flex';
                         document.getElementById(`${prefix}-resume-btn`).style.display = 'inline-flex';
                         showToast('Render failed', 'error');
+                    } else if (data.status === 'queued') {
+                        let text = `Queued (Position: ${data.queue_position})`;
+                        // Estimate wait time (assuming ~3-5 mins per video)
+                        if (data.queue_position > 1) {
+                            text += ` - Approx ${(data.queue_position - 1) * 4} min wait...`;
+                        } else {
+                            text += ` - Next in line...`;
+                        }
+                        const elapsed = data.elapsed_seconds ? ` (${formatTime(Math.round(data.elapsed_seconds))})` : '';
+                        setStatus(prefix, data.status, text + elapsed);
+
+                        const prog = document.getElementById(`${prefix}-progress`);
+                        prog.classList.add('indeterminate');
+                        prog.style.width = '100%'; // Full width pulsing for queue
                     } else {
-                        let text = data.status === 'processing' ? 'Rendering...' : 'Queued...';
+                        let text = data.status === 'processing' ? 'Rendering...' : data.status;
                         if (data.current_scene && data.total_scenes) {
                             text = `Processing Scene ${data.current_scene}/${data.total_scenes}`;
                             const pct = Math.round((data.current_scene / data.total_scenes) * 100);

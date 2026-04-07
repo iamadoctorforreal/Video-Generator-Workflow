@@ -6,16 +6,18 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 import re
+import urllib.request
 import glob
 import uuid
 import random
 import time
 import json
 import numpy as np
+import requests
 from faster_whisper import WhisperModel
 import gc
 import soundfile as sf
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 import shutil
 from pydantic import BaseModel
 from typing import Optional
@@ -56,6 +58,62 @@ def save_jobs():
     except: pass
 
 jobs = load_jobs()
+
+# ---------------------------------------------------------------------------
+# Job Queue — controls how many renders run simultaneously
+# ---------------------------------------------------------------------------
+# ✏️  Change this number to allow more concurrent renders.
+# Rule of thumb: start at 1, raise to 2 only if Task Manager shows < 70% RAM usage.
+MAX_CONCURRENT_RENDERS: int = 1
+# Maximum active/queued jobs allowed per user IP address to prevent spam
+MAX_JOBS_PER_IP: int = 3
+
+import queue as _queue
+import threading as _threading
+
+_job_queue: _queue.Queue = _queue.Queue()   # holds (job_id, VideoRequest) tuples
+_active_jobs: list = []                      # job_ids currently being rendered
+_queue_lock = _threading.Lock()
+
+
+def _worker_loop():
+    """Worker thread: pull jobs from queue and render them one at a time."""
+    while True:
+        job_id, request = _job_queue.get()   # blocks until a job is available
+        try:
+            with _queue_lock:
+                _active_jobs.append(job_id)
+            jobs[job_id]["status"] = "processing"
+            save_jobs()
+            generate_video_task(job_id, request)
+        finally:
+            with _queue_lock:
+                if job_id in _active_jobs:
+                    _active_jobs.remove(job_id)
+            _job_queue.task_done()
+
+
+# Start exactly MAX_CONCURRENT_RENDERS worker threads
+for _ in range(MAX_CONCURRENT_RENDERS):
+    _t = _threading.Thread(target=_worker_loop, daemon=True)
+    _t.start()
+
+
+def _enqueue_job(job_id: str, request) -> int:
+    """Add a job to the queue and return its queue position (1-indexed)."""
+    _job_queue.put((job_id, request))
+    return _job_queue.qsize()   # items still waiting (not yet picked up by a worker)
+
+
+def _queue_position(job_id: str) -> int | None:
+    """Return 1-indexed queue position for a queued job, or None if not queued."""
+    with _job_queue.mutex:
+        items = list(_job_queue.queue)
+    for idx, (jid, _) in enumerate(items):
+        if jid == job_id:
+            return idx + 1   # 1 = next to be picked up
+    return None
+
 
 app = FastAPI()
 
@@ -218,6 +276,9 @@ class VideoRequest(BaseModel):
     add_effects: bool = True
     orientation: str = "portrait"          # "portrait" or "landscape"
     job_id: Optional[str] = None           # For resuming a completed job
+    
+    # Webhook integration
+    webhook_url: Optional[str] = None      # URL to ping when job completes (or fails)
 
 
 def sanitize_text_for_tts(text):
@@ -352,6 +413,98 @@ def auto_detect_images(images_folder, num_scenes):
     except: return []
 
 
+# ---------------------------------------------------------------------------
+# Temp-file cleanup helpers
+# ---------------------------------------------------------------------------
+
+def cleanup_job_wavs(job_id: str):
+    """Delete all temporary WAV files for a given job."""
+    patterns = [
+        f"temp_{job_id}_*.wav",
+    ]
+    deleted = []
+    for pattern in patterns:
+        for f in glob.glob(pattern):
+            try:
+                os.remove(f)
+                deleted.append(f)
+            except Exception as e:
+                print(f"⚠️ Could not delete {f}: {e}")
+    if deleted:
+        print(f"🧹 Cleaned {len(deleted)} WAV file(s) for job {job_id}")
+    return deleted
+
+
+def _background_cleanup_loop():
+    """Daemon thread: every 30 min, delete WAVs for failed/old jobs."""
+    FAILED_JOB_WAV_MAX_AGE_HOURS = 4
+    SUCCESS_CHECKPOINT_MAX_AGE_DAYS = 7
+    while True:
+        time.sleep(30 * 60)  # wait 30 minutes between sweeps
+        try:
+            now = time.time()
+            for job_id, info in list(jobs.items()):
+                status = info.get("status", "")
+                started_at = info.get("started_at", now)
+                age_hours = (now - started_at) / 3600
+
+                # Clean WAVs for failed jobs older than 4 hours
+                if status == "failed" and age_hours > FAILED_JOB_WAV_MAX_AGE_HOURS:
+                    print(f"🕐 Auto-cleanup: WAVs for failed job {job_id} ({age_hours:.1f}h old)")
+                    cleanup_job_wavs(job_id)
+
+                # Clean WAVs for successful jobs (audio already baked into checkpoints)
+                if status == "success":
+                    cleanup_job_wavs(job_id)
+
+                # Clean checkpoint files for jobs older than 7 days
+                age_days = age_hours / 24
+                if age_days > SUCCESS_CHECKPOINT_MAX_AGE_DAYS:
+                    for cp in glob.glob(os.path.join(CHECKPOINT_DIR, f"cp_{job_id}_scene_*.mp4")):
+                        try:
+                            os.remove(cp)
+                            print(f"🗑️ Removed old checkpoint: {cp}")
+                        except: pass
+        except Exception as e:
+            print(f"⚠️ Background cleanup error: {e}")
+
+
+def _send_webhook(job_id: str, status: str, message: str, filename: str = None):
+    """Sends a fire-and-forget webhook to the user's provided URL."""
+    webhook_url = jobs[job_id].get("webhook_url")
+    if not webhook_url:
+        return
+
+    payload = {
+        "job_id": job_id,
+        "status": status,
+        "message": message,
+        "filename": filename
+    }
+    
+    # If we know the server's base URL, provide a fully-qualified direct download link
+    base_url = jobs[job_id].get("base_url")
+    if base_url and filename:
+        # e.g., https://my-app.railway.app/videos/Story_Final_abc123.mp4
+        payload["video_url"] = f"{base_url.rstrip('/')}/videos/{filename}"
+    
+    # Run in a separate thread so it doesn't block cleanup
+    def fire():
+        try:
+            print(f"🔔 Sending webhook for job {job_id} to {webhook_url}")
+            requests.post(webhook_url, json=payload, timeout=5)
+        except Exception as e:
+            print(f"⚠️ Webhook failed for job {job_id}: {e}")
+            
+    _threading.Thread(target=fire, daemon=True).start()
+
+
+# Start background cleanup daemon
+import threading
+_cleanup_thread = threading.Thread(target=_background_cleanup_loop, daemon=True)
+_cleanup_thread.start()
+
+
 def resolve_music_path(bg_music_file):
     """Find the actual path for a music file."""
     if not bg_music_file:
@@ -369,6 +522,34 @@ def resolve_music_path(bg_music_file):
     if os.path.exists(root_path):
         return root_path
     return None
+
+
+# --- URL media downloader ---
+URL_MEDIA_DIR = "url_media_cache"
+os.makedirs(URL_MEDIA_DIR, exist_ok=True)
+
+def download_url_media(url: str) -> str | None:
+    """
+    Download a remote URL to a local temp file and return the local path.
+    Returns None if the download fails.
+    """
+    try:
+        # Infer extension from URL path (default to .mp4 for videos, .jpg for images)
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        url_path = parsed.path
+        ext = os.path.splitext(url_path)[-1].lower()
+        if ext not in ('.jpg', '.jpeg', '.png', '.mp4', '.mov', '.avi', '.webm'):
+            ext = '.jpg'  # safe default for unknown types
+        local_name = f"url_{uuid.uuid4().hex[:10]}{ext}"
+        local_path = os.path.join(URL_MEDIA_DIR, local_name)
+        print(f"🌐 Downloading media from URL: {url}")
+        urllib.request.urlretrieve(url, local_path)
+        print(f"✅ Downloaded to: {local_path}")
+        return local_path
+    except Exception as e:
+        print(f"⚠️ Failed to download URL media: {url} — {e}")
+        return None
 
 
 def generate_video_task(job_id: str, request: VideoRequest):
@@ -457,10 +638,18 @@ def generate_video_task(job_id: str, request: VideoRequest):
             media_file = auto_detected_images[i-1] if (scene.media_name == "detect" and i-1 < len(auto_detected_images)) else scene.media_name
             media_path = None
             if media_file:
-                p1 = os.path.join(BASE_MEDIA_PATH, media_file)
-                p2 = os.path.join(UPLOAD_DIR, media_file)
-                if os.path.exists(p1): media_path = p1
-                elif os.path.exists(p2): media_path = p2
+                # URL support: download remote media on-the-fly
+                if media_file.startswith("http://") or media_file.startswith("https://"):
+                    downloaded = download_url_media(media_file)
+                    if downloaded:
+                        media_path = downloaded
+                        # Update is_video_clip based on the downloaded extension
+                        media_file = os.path.basename(downloaded)
+                else:
+                    p1 = os.path.join(BASE_MEDIA_PATH, media_file)
+                    p2 = os.path.join(UPLOAD_DIR, media_file)
+                    if os.path.exists(p1): media_path = p1
+                    elif os.path.exists(p2): media_path = p2
 
             TARGET_W = 720 if request.orientation == "portrait" else 1280
             TARGET_H = 1280 if request.orientation == "portrait" else 720
@@ -528,8 +717,21 @@ def generate_video_task(job_id: str, request: VideoRequest):
             if audio_clip: audio_clip.close()
             if 'clip_audio_orig' in locals() and clip_audio_orig: clip_audio_orig.close()
             if raw_clip: raw_clip.close()
-            
+
             checkpoint_files.append(cp_path)
+
+            # ✅ Immediately delete this scene's WAV — audio is now baked into the checkpoint
+            for wav_candidate in [
+                f"temp_{job_id}_{i}.wav",
+                f"temp_{job_id}_{i}_silence.wav",
+            ]:
+                if os.path.exists(wav_candidate):
+                    try:
+                        os.remove(wav_candidate)
+                        print(f"🧹 Deleted temp WAV: {wav_candidate}")
+                    except Exception as e:
+                        print(f"⚠️ Could not delete {wav_candidate}: {e}")
+
             gc.collect()
 
         # --- FINAL ASSEMBLY ---
@@ -582,6 +784,9 @@ def generate_video_task(job_id: str, request: VideoRequest):
         jobs[job_id]["filename"] = output_name
         save_jobs()
         print(f"✅ Job {job_id} Complete!")
+        
+        # Fire webhook!
+        _send_webhook(job_id, "success", "Video rendered successfully.", output_name)
 
     except Exception as e:
         import traceback
@@ -589,23 +794,54 @@ def generate_video_task(job_id: str, request: VideoRequest):
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
         save_jobs()
+        
+        # Fire webhook!
+        _send_webhook(job_id, "failed", f"Render failed: {str(e)}")
 
 
-@app.post("/generate-ghibli-video")
-async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
+@app.post("/generate-video")
+async def generate_video(request: VideoRequest, req: Request):
+    client_ip = req.client.host if req.client else "unknown"
+    
+    # 1. Rate Limiting Check
+    active_count = sum(
+        1 for j in jobs.values() 
+        if j.get("client_ip") == client_ip 
+        and j.get("status") in ("queued", "processing", "assembling", "pending")
+    )
+    
+    if active_count >= MAX_JOBS_PER_IP:
+        raise HTTPException(
+            status_code=429, 
+            detail=f"Rate limit exceeded. You already have {active_count} jobs running or queued. Please wait for them to finish."
+        )
+
+    # 2. Add to Queue
     job_id = request.job_id
     if not job_id or job_id not in jobs:
         job_id = str(uuid.uuid4())[:8]
-        jobs[job_id] = {"status": "pending", "started_at": time.time()}
+        jobs[job_id] = {
+            "status": "queued", 
+            "started_at": time.time(), 
+            "client_ip": client_ip,
+            "webhook_url": request.webhook_url,
+            "base_url": str(req.base_url)
+        }
     else:
-        # Resuming existing job
-        jobs[job_id]["status"] = "pending"
+        # Resuming existing job — re-queue it
+        jobs[job_id]["status"] = "queued"
         jobs[job_id]["error"] = None
-        # Keep started_at to maintain total elapsed time if desired, or reset
-    
+        jobs[job_id]["webhook_url"] = request.webhook_url
+        jobs[job_id]["base_url"] = str(req.base_url)
+
     save_jobs()
-    background_tasks.add_task(generate_video_task, job_id, request)
-    return {"status": "accepted", "job_id": job_id, "message": "Video generation started/resumed"}
+    position = _enqueue_job(job_id, request)
+    return {
+        "status": "queued",
+        "job_id": job_id,
+        "queue_position": position,
+        "message": f"Job queued. Position in queue: {position}. Max concurrent renders: {MAX_CONCURRENT_RENDERS}."
+    }
 
 
 @app.get("/video-status/{job_id}")
@@ -613,9 +849,43 @@ async def get_status(job_id: str):
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     response = jobs[job_id].copy()
-    if response["status"] in ["processing", "pending"]:
+    status = response["status"]
+    if status in ["processing", "queued", "pending", "assembling"]:
         response["elapsed_seconds"] = round(time.time() - response["started_at"], 2)
+    if status == "queued":
+        pos = _queue_position(job_id)
+        response["queue_position"] = pos if pos is not None else 1
     return response
+
+
+@app.get("/queue-status")
+async def queue_status():
+    """Returns an overview of the current queue and active renders."""
+    with _job_queue.mutex:
+        queued_ids = [jid for jid, _ in list(_job_queue.queue)]
+    with _queue_lock:
+        active = list(_active_jobs)
+    return {
+        "max_concurrent_renders": MAX_CONCURRENT_RENDERS,
+        "active_renders": len(active),
+        "active_job_ids": active,
+        "queued_count": len(queued_ids),
+        "queued_job_ids": queued_ids,
+    }
+
+
+@app.delete("/cleanup-job/{job_id}")
+async def manual_cleanup_job(job_id: str):
+    """Manually delete all temporary WAV files for a completed job."""
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    deleted = cleanup_job_wavs(job_id)
+    # Also remove checkpoint files if caller wants a full wipe
+    return {
+        "job_id": job_id,
+        "deleted_files": deleted,
+        "message": f"Cleaned up {len(deleted)} temp file(s)."
+    }
 
 
 @app.get("/favicon.png")
