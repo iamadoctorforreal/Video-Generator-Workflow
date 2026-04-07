@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # OPTIMIZATION: Limit MKL/OMP threads to prevent memory fragmentation/failures on Windows
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -18,6 +21,7 @@ from faster_whisper import WhisperModel
 import gc
 import soundfile as sf
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
+import sentry_sdk
 import shutil
 from pydantic import BaseModel
 from typing import Optional
@@ -114,6 +118,14 @@ def _queue_position(job_id: str) -> int | None:
             return idx + 1   # 1 = next to be picked up
     return None
 
+
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+    )
 
 app = FastAPI()
 

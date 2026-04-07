@@ -5,6 +5,8 @@ fastapi
 uvicorn
 pydantic
 python-multipart
+sentry-sdk[fastapi]
+python-dotenv
 
 # AI & Media Processing
 kokoro-onnx
