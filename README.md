@@ -22,7 +22,7 @@ The fastest way to get the full **Storyteller Suite** up and running:
    ```bash
    docker-compose down && docker-compose up --build
    ```
-   *(This pulls the official `okayna/video-generator-workflow:v1` image automatically.)*
+   *(This builds the latest `okayna/video-generator-workflow:v2` image automatically.)*
 
 ### 🎨 Access the Studio
 Once running, visit **[http://localhost:8000](http://localhost:8000)** to start creating.
@@ -138,6 +138,6 @@ The official image is hosted at:
 
 To pull it manually:
 ```bash
-docker pull okayna/video-generator-workflow
+docker pull okayna/video-generator-workflow:v2
 ```
 
