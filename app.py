@@ -21,7 +21,7 @@ from faster_whisper import WhisperModel
 import gc
 import soundfile as sf
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
-# import sentry_sdk
+import sentry_sdk
 import shutil
 from pydantic import BaseModel
 from typing import Optional
@@ -121,12 +121,12 @@ def _queue_position(job_id: str) -> int | None:
 
 sentry_dsn = os.getenv("SENTRY_DSN")
 if sentry_dsn:
-    pass
-    # sentry_sdk.init(
-    #     dsn=sentry_dsn,
-    #     traces_sample_rate=1.0,
-    #     profiles_sample_rate=1.0,
-    # )
+   # pass
+     sentry_sdk.init(
+         dsn=sentry_dsn,
+         traces_sample_rate=1.0,
+         profiles_sample_rate=1.0,
+     )
 
 app = FastAPI()
 
@@ -139,10 +139,26 @@ app.add_middleware(
 )
 
 # Serve generated videos statically
-app.mount("/videos", StaticFiles(directory="."), name="videos")
+# app.mount("/videos", #StaticFiles(directory="."), name="videos")
 
 # Directories
+#UPLOAD_DIR = "temp_uploads"
+
+
+# Directories
+
 UPLOAD_DIR = "temp_uploads"
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+
+# Serve generated videos statically
+
+app.mount("/videos", StaticFiles(directory=UPLOAD_DIR), name="videos")
+
+
+
 MUSIC_UPLOAD_DIR = "uploaded_music"
 VOICEOVER_UPLOAD_DIR = "uploaded_voiceovers"
 CHECKPOINT_DIR = "job_checkpoints"
@@ -827,7 +843,8 @@ def generate_video_task(job_id: str, request: VideoRequest):
         try:
             # Extract a frame as a thumbnail (at 2 seconds or middle of video)
             t_thumb = min(2.0, final_video.duration / 2)
-            final_video.save_frame(thumbnail_name, t=t_thumb)
+
+final_video.save_frame(os.path.join(UPLOAD_DIR, thumbnail_name), t=t_thumb)            #final_video.save_frame(thumbnail_name, t=t_thumb)
         except Exception as e:
             print(f"⚠️ Thumbnail generation failed: {e}")
             thumbnail_name = None
