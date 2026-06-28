@@ -122,6 +122,7 @@
 
         /* ─── STUDIO MODE ────────────────────────────────── */
         #studio-mode {
+            display: flex;
             flex-direction: column;
             align-items: center;
             padding: 40px 20px 60px;
@@ -967,7 +968,7 @@
         #canvas-mode {
             min-height: calc(100vh - 57px);
             padding: 40px 20px;
-            max-width: 800px;
+            max-width: 680px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -1152,9 +1153,25 @@
                 justify-content: flex-start;
             }
 
+            #pro-mode {
+                height: auto !important;
+                overflow: visible !important;
+            }
+
             .pro-layout {
                 grid-template-columns: 1fr !important;
                 gap: 16px;
+                height: auto !important;
+            }
+
+            .pro-sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                overflow-y: visible !important;
+            }
+
+            .pro-main {
+                overflow-y: visible !important;
             }
 
             .settings-grid,
@@ -1211,6 +1228,65 @@
                 align-items: stretch;
             }
         }
+
+        /* ─── ONBOARDING TOUR STYLES ────────────────────── */
+        .tour-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .tour-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .tour-highlight {
+            position: absolute;
+            border-radius: var(--radius);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px rgba(200, 169, 110, 0.4);
+            border: 2px solid var(--accent);
+            z-index: 10000;
+            pointer-events: none;
+            transition: all 0.3s ease-out;
+        }
+        .tour-popover {
+            position: absolute;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 320px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 10001;
+            transition: all 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .tour-popover-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .tour-popover-text {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .tour-popover-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+        .tour-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
     </style>
 </head>
 
@@ -1226,6 +1302,9 @@
             <button class="nav-tab" onclick="switchMode('canvas')">CANVAS</button>
             <button class="nav-tab" onclick="switchMode('gallery'); loadGalleryView()">GALLERY</button>
         </div>
+        <button class="nav-tab" onclick="startOnboardingTour(true)" style="margin-left: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 4px;" title="Take the Tour">
+            <span class="icon" style="font-size:14px;">help_outline</span> Tour
+        </button>
     </nav>
 
     <!-- ════════════════════════════════════════════════ -->
@@ -2701,6 +2780,202 @@
 
             // Init pro mode with one scene
             addScene('pro');
+
+            // Start onboarding tour if first time visiting
+            setTimeout(() => startOnboardingTour(false), 800);
+        });
+
+        // ─────────────────────────────────────────────────
+        //  ONBOARDING TOUR SYSTEM
+        // ─────────────────────────────────────────────────
+        let currentTourStep = 0;
+        const tourSteps = [
+            {
+                title: "Welcome to Storyteller!",
+                text: "Here is your navigation bar. Choose between our three unique creation modules: <br><br><b>1. Studio:</b> Standard, simple, fast script parsing.<br><b>2. Pro:</b> Advanced timeline storyboard editor.<br><b>3. Canvas:</b> Distraction-free script drafting area.",
+                target: ".nav-tabs",
+                setup: () => {}
+            },
+            {
+                title: "Studio Mode 🎙",
+                text: "This is <b>Studio Mode</b>. It's the default workflow: paste your voiceover script, double-space to automatically separate scenes, click <i>Review & Match Media</i> to upload pictures/videos for each slide, and render!",
+                target: "#studio-script",
+                setup: () => switchMode('studio')
+            },
+            {
+                title: "Pro Mode Storyboard 🎬",
+                text: "This is <b>Pro Mode</b>, our advanced storyboard editor. It lets you add, delete, and rearrange scenes manually.<br><br><b>Uniqueness:</b> If you upload a video clip that has audio, the system automatically transcribes it to generate subtitles! Perfect for editing pre-recorded clips.",
+                target: "#pro-scenes-list",
+                setup: () => {
+                    switchMode('pro');
+                    // Ensure there is at least one scene to look at
+                    if (document.getElementById('pro-scenes-list').children.length === 0) {
+                        addScene('pro');
+                    }
+                }
+            },
+            {
+                title: "Canvas Mode ✍️",
+                text: "This is <b>Canvas Mode</b>, designed for writers. Type your script freely, double-space to break up scenes, and click <i>Send to Studio</i> when you are ready to match media and render.",
+                target: ".canvas-script",
+                setup: () => switchMode('canvas')
+            },
+            {
+                title: "Production Settings 🎵",
+                text: "Tweak voiceover options, set orientation (Portrait for Reels/TikToks, Landscape for YouTube), or add background music. <i>Pan/Zoom FX</i> animates static photos!",
+                target: ".studio-card:nth-of-type(2)",
+                setup: () => switchMode('studio')
+            },
+            {
+                title: "Ready to Create? 🚀",
+                text: "When you are happy with your script and settings, click <b>Launch</b> to compile your video in the background! You can check your completed projects in the <b>Gallery</b> tab.",
+                target: "#studio-render-btn",
+                setup: () => switchMode('studio')
+            }
+        ];
+
+        function startOnboardingTour(force = false) {
+            if (!force && localStorage.getItem('tour_completed')) {
+                return;
+            }
+            
+            currentTourStep = 0;
+            createTourElements();
+            showTourStep();
+        }
+
+        function createTourElements() {
+            if (document.getElementById('tour-overlay')) return;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'tour-overlay';
+            overlay.className = 'tour-overlay';
+
+            const highlight = document.createElement('div');
+            highlight.id = 'tour-highlight';
+            highlight.className = 'tour-highlight';
+
+            const popover = document.createElement('div');
+            popover.id = 'tour-popover';
+            popover.className = 'tour-popover';
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(highlight);
+            document.body.appendChild(popover);
+        }
+
+        function showTourStep() {
+            const step = tourSteps[currentTourStep];
+            if (!step) {
+                endTour();
+                return;
+            }
+
+            // Run setup (e.g. switch active tabs programmatically)
+            step.setup();
+
+            // Make sure overlay is visible
+            document.getElementById('tour-overlay').classList.add('active');
+
+            const popover = document.getElementById('tour-popover');
+            const isLast = currentTourStep === tourSteps.length - 1;
+
+            popover.innerHTML = `
+                <div class="tour-popover-title">${step.title}</div>
+                <div class="tour-popover-text">${step.text}</div>
+                <div class="tour-popover-footer">
+                    <button class="btn btn-secondary tour-btn" onclick="endTour()">Skip</button>
+                    <button class="btn btn-primary tour-btn" onclick="nextTourStep()">${isLast ? 'Finish' : 'Next &gt;'}</button>
+                </div>
+            `;
+
+            // Wait a tiny bit for tab transitions to finish before highlighting
+            setTimeout(() => {
+                const el = document.querySelector(step.target);
+                if (el) {
+                    highlightElement(el);
+                    positionPopover(el);
+                } else {
+                    // Fallback to center screen if element isn't active/visible
+                    const highlight = document.getElementById('tour-highlight');
+                    highlight.style.display = 'none';
+                    popover.style.top = '50%';
+                    popover.style.left = '50%';
+                    popover.style.transform = 'translate(-50%, -50%)';
+                    popover.style.position = 'fixed';
+                }
+            }, 150);
+        }
+
+        function highlightElement(el) {
+            const highlight = document.getElementById('tour-highlight');
+            highlight.style.display = 'block';
+            highlight.style.position = 'absolute';
+            
+            const rect = el.getBoundingClientRect();
+            const scrollY = window.scrollY;
+            const scrollX = window.scrollX;
+
+            highlight.style.top = `${rect.top + scrollY - 6}px`;
+            highlight.style.left = `${rect.left + scrollX - 6}px`;
+            highlight.style.width = `${rect.width + 12}px`;
+            highlight.style.height = `${rect.height + 12}px`;
+
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function positionPopover(el) {
+            const popover = document.getElementById('tour-popover');
+            popover.style.transform = 'none';
+            popover.style.position = 'absolute';
+
+            const rect = el.getBoundingClientRect();
+            const scrollY = window.scrollY;
+            const scrollX = window.scrollX;
+
+            let top = rect.bottom + scrollY + 12;
+            let left = rect.left + scrollX + (rect.width / 2) - 160;
+
+            if (left < 10) left = 10;
+            if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
+
+            // If it overflows the screen height, display it above the element instead
+            if (rect.bottom + 250 > window.innerHeight) {
+                top = rect.top + scrollY - popover.offsetHeight - 12;
+            }
+
+            popover.style.top = `${top}px`;
+            popover.style.left = `${left}px`;
+        }
+
+        function nextTourStep() {
+            currentTourStep++;
+            showTourStep();
+        }
+
+        function endTour() {
+            const overlay = document.getElementById('tour-overlay');
+            const highlight = document.getElementById('tour-highlight');
+            const popover = document.getElementById('tour-popover');
+
+            if (overlay) overlay.remove();
+            if (highlight) highlight.remove();
+            if (popover) popover.remove();
+
+            localStorage.setItem('tour_completed', 'true');
+        }
+
+        // Reposition popover on window resize
+        window.addEventListener('resize', () => {
+            const overlay = document.getElementById('tour-overlay');
+            if (overlay && overlay.classList.contains('active')) {
+                const step = tourSteps[currentTourStep];
+                const el = document.querySelector(step.target);
+                if (el) {
+                    highlightElement(el);
+                    positionPopover(el);
+                }
+            }
         });
     </script>
 </body>
