@@ -21,7 +21,7 @@ from faster_whisper import WhisperModel
 import gc
 import soundfile as sf
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
-import sentry_sdk
+# import sentry_sdk
 import shutil
 from pydantic import BaseModel
 from typing import Optional
@@ -121,11 +121,12 @@ def _queue_position(job_id: str) -> int | None:
 
 sentry_dsn = os.getenv("SENTRY_DSN")
 if sentry_dsn:
-    sentry_sdk.init(
-        dsn=sentry_dsn,
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-    )
+    pass
+    # sentry_sdk.init(
+    #     dsn=sentry_dsn,
+    #     traces_sample_rate=1.0,
+    #     profiles_sample_rate=1.0,
+    # )
 
 app = FastAPI()
 

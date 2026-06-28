@@ -1,0 +1,380 @@
+{
+  "name": "Advanced Video Generation to Google Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "\ud83c\udfac Video Generator",
+        "formDescription": "Fill in what you need. Most fields are optional \u2014 only the Script is required for AI voiceover generation.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Script (one scene per blank-line-separated paragraph)",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Media URLs (one URL per line, matched to scenes \u2014 optional)",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Voiceover Audio URL (optional \u2014 paste a direct URL to an audio file to use as voiceover instead of AI TTS)",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "Background Music URL (optional \u2014 paste a direct URL to an mp3/wav to use as background music)",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "Voice",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "af_bella"
+                  },
+                  {
+                    "option": "af_sarah"
+                  },
+                  {
+                    "option": "am_adam"
+                  },
+                  {
+                    "option": "bf_emma"
+                  },
+                  {
+                    "option": "bm_george"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Generate AI Voiceover?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "true"
+                  },
+                  {
+                    "option": "false"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Add Captions?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "true"
+                  },
+                  {
+                    "option": "false"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Caption Position",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "bottom"
+                  },
+                  {
+                    "option": "center"
+                  },
+                  {
+                    "option": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Add Background Music?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "true"
+                  },
+                  {
+                    "option": "false"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Background Music Volume (0.0 to 1.0, default 0.12)",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "Keep Original Video Audio?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "false"
+                  },
+                  {
+                    "option": "true"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Original Video Audio Volume (0.0 to 1.0, default 0.4)",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "Add Pan/Zoom Effects? (recommended for still images)",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "true"
+                  },
+                  {
+                    "option": "false"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Orientation",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "landscape"
+                  },
+                  {
+                    "option": "portrait"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -800,
+        0
+      ],
+      "id": "form-trigger-1",
+      "name": "Advanced Form Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-voiceover",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{ $json['Voiceover Audio URL (optional \u2014 paste a direct URL to an audio file to use as voiceover instead of AI TTS)'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -500,
+        -200
+      ],
+      "id": "upload-vo-1",
+      "name": "Upload Voiceover (if URL provided)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-music",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{ $json['Background Music URL (optional \u2014 paste a direct URL to an mp3/wav to use as background music)'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -500,
+        200
+      ],
+      "id": "upload-music-1",
+      "name": "Upload Background Music (if URL provided)"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst form = $('Advanced Form Trigger').item.json;\n\nconst rawScript = form[\"Script (one scene per blank-line-separated paragraph)\"] || \"\";\nconst rawMediaUrls = form[\"Media URLs (one URL per line, matched to scenes \u2014 optional)\"] || \"\";\n\nconst scriptLines = rawScript.split(/\\r?\\n\\r?\\n/).map(s => s.trim()).filter(s => s.length > 0);\nconst mediaUrls = rawMediaUrls.split(/\\r?\\n/).map(s => s.trim()).filter(s => s.length > 0);\n\nconst scenes = scriptLines.map((text, index) => ({\n  text: text,\n  media_name: mediaUrls[index] ? mediaUrls[index] : \"detect\"\n}));\n\nconst toBool = (val, def) => val === undefined || val === \"\" ? def : val === \"true\";\n\n// Get optional uploaded filenames from previous nodes (null-safe)\nlet uploadedVo = null;\ntry { uploadedVo = $('Upload Voiceover (if URL provided)').item.json.filename || null; } catch(e) {}\n\nlet uploadedMusic = null;\ntry { uploadedMusic = $('Upload Background Music (if URL provided)').item.json.filename || null; } catch(e) {}\n\nconst generateVo = toBool(form[\"Generate AI Voiceover?\"], true);\n\nreturn [{\n  json: {\n    scenes,\n    voice: form[\"Voice\"] || \"af_bella\",\n    generate_voiceover: generateVo,\n    uploaded_voiceover: generateVo ? null : uploadedVo,\n    add_captions: toBool(form[\"Add Captions?\"], true),\n    caption_position: form[\"Caption Position\"] || \"bottom\",\n    add_background_music: toBool(form[\"Add Background Music?\"], true),\n    bg_music_file: uploadedMusic || null,\n    bg_music_volume: parseFloat(form[\"Background Music Volume (0.0 to 1.0, default 0.12)\"] || \"0.12\"),\n    keep_clip_audio: toBool(form[\"Keep Original Video Audio?\"], false),\n    clip_audio_volume: parseFloat(form[\"Original Video Audio Volume (0.0 to 1.0, default 0.4)\"] || \"0.4\"),\n    add_effects: toBool(form[\"Add Pan/Zoom Effects? (recommended for still images)\"], true),\n    orientation: form[\"Orientation\"] || \"landscape\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        0
+      ],
+      "id": "code-node-1",
+      "name": "Format JSON Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/generate-video",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ Object.assign({}, $json, { webhook_url: $resumeUrl }) }}",
+        "options": {
+          "timeout": 3600000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        200,
+        0
+      ],
+      "id": "http-post-1",
+      "name": "Send Request to FastAPI"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        0
+      ],
+      "id": "wait-node-1",
+      "name": "Wait for Video Completion",
+      "webhookId": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.body.video_url }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        800,
+        0
+      ],
+      "id": "http-download-1",
+      "name": "Download Video File"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "fileContent": "data",
+        "name": "={{ $('Wait for Video Completion').item.json.body.filename || 'final_video.mp4' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "gdrive-node-1",
+      "name": "Upload to Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Advanced Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Upload Voiceover (if URL provided)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Background Music (if URL provided)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Format JSON Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format JSON Payload": {
+      "main": [
+        [
+          {
+            "node": "Send Request to FastAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Request to FastAPI": {
+      "main": [
+        [
+          {
+            "node": "Wait for Video Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Video Completion": {
+      "main": [
+        [
+          {
+            "node": "Download Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video File": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
