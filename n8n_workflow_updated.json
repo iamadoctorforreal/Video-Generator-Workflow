@@ -1,31 +1,79 @@
 {
-  "name": "Advanced Video Generation to Google Drive",
+  "name": "Ultimate Ultimate Video Generator (10 Scenes + Audio)",
   "nodes": [
     {
       "parameters": {
-        "formTitle": "\ud83c\udfac Video Generator",
-        "formDescription": "Fill in what you need. Most fields are optional \u2014 only the Script is required for AI voiceover generation.",
+        "formTitle": "Video Generator - Studio Mode",
+        "formDescription": "Upload up to 10 scene images/videos directly, or paste URLs. Leave blank scenes to get a dark background.",
         "formFields": {
           "values": [
             {
-              "fieldLabel": "Script (one scene per blank-line-separated paragraph)",
+              "fieldLabel": "Script (one paragraph per scene, separated by blank line)",
               "fieldType": "textarea",
               "requiredField": true
             },
             {
-              "fieldLabel": "Media URLs (one URL per line, matched to scenes \u2014 optional)",
+              "fieldLabel": "Media URLs (one per line, alternative to local uploads)",
               "fieldType": "textarea"
             },
             {
-              "fieldLabel": "Voiceover Audio URL (optional \u2014 paste a direct URL to an audio file to use as voiceover instead of AI TTS)",
+              "fieldLabel": "Scene 1 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 2 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 3 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 4 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 5 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 6 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 7 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 8 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 9 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Scene 10 Media (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Voiceover File (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Voiceover URL",
               "fieldType": "text"
             },
             {
-              "fieldLabel": "Background Music URL (optional \u2014 paste a direct URL to an mp3/wav to use as background music)",
+              "fieldLabel": "Music File (Local Upload)",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Music URL",
               "fieldType": "text"
             },
             {
-              "fieldLabel": "Voice",
+              "fieldLabel": "AI Voice",
               "fieldType": "dropdown",
               "fieldOptions": {
                 "values": [
@@ -33,16 +81,7 @@
                     "option": "af_bella"
                   },
                   {
-                    "option": "af_sarah"
-                  },
-                  {
                     "option": "am_adam"
-                  },
-                  {
-                    "option": "bf_emma"
-                  },
-                  {
-                    "option": "bm_george"
                   }
                 ]
               }
@@ -76,23 +115,6 @@
               }
             },
             {
-              "fieldLabel": "Caption Position",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "bottom"
-                  },
-                  {
-                    "option": "center"
-                  },
-                  {
-                    "option": "top"
-                  }
-                ]
-              }
-            },
-            {
               "fieldLabel": "Add Background Music?",
               "fieldType": "dropdown",
               "fieldOptions": {
@@ -105,56 +127,6 @@
                   }
                 ]
               }
-            },
-            {
-              "fieldLabel": "Background Music Volume (0.0 to 1.0, default 0.12)",
-              "fieldType": "text"
-            },
-            {
-              "fieldLabel": "Keep Original Video Audio?",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "false"
-                  },
-                  {
-                    "option": "true"
-                  }
-                ]
-              }
-            },
-            {
-              "fieldLabel": "Original Video Audio Volume (0.0 to 1.0, default 0.4)",
-              "fieldType": "text"
-            },
-            {
-              "fieldLabel": "Add Pan/Zoom Effects? (recommended for still images)",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "true"
-                  },
-                  {
-                    "option": "false"
-                  }
-                ]
-              }
-            },
-            {
-              "fieldLabel": "Orientation",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "landscape"
-                  },
-                  {
-                    "option": "portrait"
-                  }
-                ]
-              }
             }
           ]
         },
@@ -163,11 +135,984 @@
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 2.5,
       "position": [
-        -800,
+        -500,
         0
       ],
       "id": "form-trigger-1",
-      "name": "Advanced Form Trigger"
+      "name": "Advanced Form Trigger",
+      "webhookId": "22222222-2222-2222-2222-222222222222"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 1 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        0
+      ],
+      "id": "if-Scene 1 Media (Local Upload)",
+      "name": "Has Scene 1 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 1 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        100,
+        -100
+      ],
+      "id": "upload-Scene 1 Media (Local Upload)",
+      "name": "Upload Scene 1 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_1_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        -100
+      ],
+      "id": "set-Scene 1 Media (Local Upload)",
+      "name": "Save Scene 1 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        700,
+        0
+      ],
+      "id": "merge-Scene 1 Media (Local Upload)",
+      "name": "Merge Scene 1 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 2 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1000,
+        0
+      ],
+      "id": "if-Scene 2 Media (Local Upload)",
+      "name": "Has Scene 2 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 2 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1300,
+        -100
+      ],
+      "id": "upload-Scene 2 Media (Local Upload)",
+      "name": "Upload Scene 2 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_2_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1600,
+        -100
+      ],
+      "id": "set-Scene 2 Media (Local Upload)",
+      "name": "Save Scene 2 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1900,
+        0
+      ],
+      "id": "merge-Scene 2 Media (Local Upload)",
+      "name": "Merge Scene 2 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 3 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2200,
+        0
+      ],
+      "id": "if-Scene 3 Media (Local Upload)",
+      "name": "Has Scene 3 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 3 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2500,
+        -100
+      ],
+      "id": "upload-Scene 3 Media (Local Upload)",
+      "name": "Upload Scene 3 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_3_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2800,
+        -100
+      ],
+      "id": "set-Scene 3 Media (Local Upload)",
+      "name": "Save Scene 3 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        3100,
+        0
+      ],
+      "id": "merge-Scene 3 Media (Local Upload)",
+      "name": "Merge Scene 3 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 4 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3400,
+        0
+      ],
+      "id": "if-Scene 4 Media (Local Upload)",
+      "name": "Has Scene 4 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 4 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3700,
+        -100
+      ],
+      "id": "upload-Scene 4 Media (Local Upload)",
+      "name": "Upload Scene 4 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_4_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4000,
+        -100
+      ],
+      "id": "set-Scene 4 Media (Local Upload)",
+      "name": "Save Scene 4 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        4300,
+        0
+      ],
+      "id": "merge-Scene 4 Media (Local Upload)",
+      "name": "Merge Scene 4 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 5 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4600,
+        0
+      ],
+      "id": "if-Scene 5 Media (Local Upload)",
+      "name": "Has Scene 5 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 5 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4900,
+        -100
+      ],
+      "id": "upload-Scene 5 Media (Local Upload)",
+      "name": "Upload Scene 5 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_5_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5200,
+        -100
+      ],
+      "id": "set-Scene 5 Media (Local Upload)",
+      "name": "Save Scene 5 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        5500,
+        0
+      ],
+      "id": "merge-Scene 5 Media (Local Upload)",
+      "name": "Merge Scene 5 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 6 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5800,
+        0
+      ],
+      "id": "if-Scene 6 Media (Local Upload)",
+      "name": "Has Scene 6 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 6 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        6100,
+        -100
+      ],
+      "id": "upload-Scene 6 Media (Local Upload)",
+      "name": "Upload Scene 6 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_6_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6400,
+        -100
+      ],
+      "id": "set-Scene 6 Media (Local Upload)",
+      "name": "Save Scene 6 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        6700,
+        0
+      ],
+      "id": "merge-Scene 6 Media (Local Upload)",
+      "name": "Merge Scene 6 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 7 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        7000,
+        0
+      ],
+      "id": "if-Scene 7 Media (Local Upload)",
+      "name": "Has Scene 7 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 7 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        7300,
+        -100
+      ],
+      "id": "upload-Scene 7 Media (Local Upload)",
+      "name": "Upload Scene 7 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_7_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        7600,
+        -100
+      ],
+      "id": "set-Scene 7 Media (Local Upload)",
+      "name": "Save Scene 7 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        7900,
+        0
+      ],
+      "id": "merge-Scene 7 Media (Local Upload)",
+      "name": "Merge Scene 7 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 8 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        8200,
+        0
+      ],
+      "id": "if-Scene 8 Media (Local Upload)",
+      "name": "Has Scene 8 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 8 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        8500,
+        -100
+      ],
+      "id": "upload-Scene 8 Media (Local Upload)",
+      "name": "Upload Scene 8 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_8_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        8800,
+        -100
+      ],
+      "id": "set-Scene 8 Media (Local Upload)",
+      "name": "Save Scene 8 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        9100,
+        0
+      ],
+      "id": "merge-Scene 8 Media (Local Upload)",
+      "name": "Merge Scene 8 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 9 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        9400,
+        0
+      ],
+      "id": "if-Scene 9 Media (Local Upload)",
+      "name": "Has Scene 9 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 9 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        9700,
+        -100
+      ],
+      "id": "upload-Scene 9 Media (Local Upload)",
+      "name": "Upload Scene 9 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_9_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        10000,
+        -100
+      ],
+      "id": "set-Scene 9 Media (Local Upload)",
+      "name": "Save Scene 9 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        10300,
+        0
+      ],
+      "id": "merge-Scene 9 Media (Local Upload)",
+      "name": "Merge Scene 9 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Scene 10 Media (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        10600,
+        0
+      ],
+      "id": "if-Scene 10 Media (Local Upload)",
+      "name": "Has Scene 10 Media (Local Upload)?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://video-generator:8000/upload-image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Scene 10 Media (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        10900,
+        -100
+      ],
+      "id": "upload-Scene 10 Media (Local Upload)",
+      "name": "Upload Scene 10 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Scene_10_Media_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        11200,
+        -100
+      ],
+      "id": "set-Scene 10 Media (Local Upload)",
+      "name": "Save Scene 10 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        11500,
+        0
+      ],
+      "id": "merge-Scene 10 Media (Local Upload)",
+      "name": "Merge Scene 10 Media (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Voiceover File (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11800,
+        0
+      ],
+      "id": "if-Voiceover File (Local Upload)",
+      "name": "Has Voiceover File (Local Upload)?"
     },
     {
       "parameters": {
@@ -179,20 +1124,89 @@
           "parameters": [
             {
               "name": "file",
-              "value": "={{ $json['Voiceover Audio URL (optional \u2014 paste a direct URL to an audio file to use as voiceover instead of AI TTS)'] }}"
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Voiceover File (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        12100,
+        -100
+      ],
+      "id": "upload-Voiceover File (Local Upload)",
+      "name": "Upload Voiceover File (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Voiceover_File_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        -500,
-        -200
+        12400,
+        -100
       ],
-      "id": "upload-vo-1",
-      "name": "Upload Voiceover (if URL provided)"
+      "id": "set-Voiceover File (Local Upload)",
+      "name": "Save Voiceover File (Local Upload)"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        12700,
+        0
+      ],
+      "id": "merge-Voiceover File (Local Upload)",
+      "name": "Merge Voiceover File (Local Upload)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-binary",
+              "leftValue": "={{ Object.keys($('Advanced Form Trigger').item.binary || {}).some(k => k === 'Music File (Local Upload)') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        13000,
+        0
+      ],
+      "id": "if-Music File (Local Upload)",
+      "name": "Has Music File (Local Upload)?"
     },
     {
       "parameters": {
@@ -204,32 +1218,69 @@
           "parameters": [
             {
               "name": "file",
-              "value": "={{ $json['Background Music URL (optional \u2014 paste a direct URL to an mp3/wav to use as background music)'] }}"
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "={{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === 'Music File (Local Upload)') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        13300,
+        -100
+      ],
+      "id": "upload-Music File (Local Upload)",
+      "name": "Upload Music File (Local Upload)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "uploaded_Music_File_(Local_Upload)",
+              "value": "={{ $json.filename }}",
+              "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        -500,
-        200
+        13600,
+        -100
       ],
-      "id": "upload-music-1",
-      "name": "Upload Background Music (if URL provided)"
+      "id": "set-Music File (Local Upload)",
+      "name": "Save Music File (Local Upload)"
     },
     {
       "parameters": {
-        "jsCode": "\nconst form = $('Advanced Form Trigger').item.json;\n\nconst rawScript = form[\"Script (one scene per blank-line-separated paragraph)\"] || \"\";\nconst rawMediaUrls = form[\"Media URLs (one URL per line, matched to scenes \u2014 optional)\"] || \"\";\n\nconst scriptLines = rawScript.split(/\\r?\\n\\r?\\n/).map(s => s.trim()).filter(s => s.length > 0);\nconst mediaUrls = rawMediaUrls.split(/\\r?\\n/).map(s => s.trim()).filter(s => s.length > 0);\n\nconst scenes = scriptLines.map((text, index) => ({\n  text: text,\n  media_name: mediaUrls[index] ? mediaUrls[index] : \"detect\"\n}));\n\nconst toBool = (val, def) => val === undefined || val === \"\" ? def : val === \"true\";\n\n// Get optional uploaded filenames from previous nodes (null-safe)\nlet uploadedVo = null;\ntry { uploadedVo = $('Upload Voiceover (if URL provided)').item.json.filename || null; } catch(e) {}\n\nlet uploadedMusic = null;\ntry { uploadedMusic = $('Upload Background Music (if URL provided)').item.json.filename || null; } catch(e) {}\n\nconst generateVo = toBool(form[\"Generate AI Voiceover?\"], true);\n\nreturn [{\n  json: {\n    scenes,\n    voice: form[\"Voice\"] || \"af_bella\",\n    generate_voiceover: generateVo,\n    uploaded_voiceover: generateVo ? null : uploadedVo,\n    add_captions: toBool(form[\"Add Captions?\"], true),\n    caption_position: form[\"Caption Position\"] || \"bottom\",\n    add_background_music: toBool(form[\"Add Background Music?\"], true),\n    bg_music_file: uploadedMusic || null,\n    bg_music_volume: parseFloat(form[\"Background Music Volume (0.0 to 1.0, default 0.12)\"] || \"0.12\"),\n    keep_clip_audio: toBool(form[\"Keep Original Video Audio?\"], false),\n    clip_audio_volume: parseFloat(form[\"Original Video Audio Volume (0.0 to 1.0, default 0.4)\"] || \"0.4\"),\n    add_effects: toBool(form[\"Add Pan/Zoom Effects? (recommended for still images)\"], true),\n    orientation: form[\"Orientation\"] || \"landscape\"\n  }\n}];\n"
+        "mode": "passThrough",
+        "output": "first"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        13900,
+        0
+      ],
+      "id": "merge-Music File (Local Upload)",
+      "name": "Merge Music File (Local Upload)"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst form = $('Advanced Form Trigger').item.json;\nconst stream = $input.first().json; // accumulated from Set nodes\n\nconst rawScript = form[\"Script (one paragraph per scene, separated by blank line)\"] || \"\";\nconst rawMediaUrls = form[\"Media URLs (one per line, alternative to local uploads)\"] || \"\";\n\nconst scriptLines = rawScript.split(/\\r?\\n\\r?\\n/).map(s => s.trim()).filter(Boolean);\nconst urlLines = rawMediaUrls.split(/\\r?\\n/).map(s => s.trim()).filter(Boolean);\n\nconst scenes = scriptLines.map((text, i) => {\n  // 1. Check if a local file was uploaded for this specific scene (1-indexed)\n  const localFileName = stream[`uploaded_Scene_${i+1}_Media_(Local_Upload)`];\n  \n  // 2. Fallback to URL if provided\n  const urlFallback = urlLines[i];\n  \n  return {\n    text,\n    media_name: localFileName || urlFallback || \"detect\"\n  };\n});\n\nconst toBool = (val, def) => (val === undefined || val === \"\") ? def : val === \"true\";\nconst generateVo = toBool(form[\"Generate AI Voiceover?\"], true);\n\nreturn [{\n  json: {\n    scenes,\n    voice: form[\"AI Voice\"] || \"af_bella\",\n    generate_voiceover: generateVo,\n    uploaded_voiceover: generateVo ? null : stream[\"uploaded_Voiceover_File_(Local_Upload)\"],\n    voiceover_url: generateVo ? null : form[\"Voiceover URL\"],\n    add_captions: toBool(form[\"Add Captions?\"], true),\n    add_background_music: toBool(form[\"Add Background Music?\"], true),\n    bg_music_file: stream[\"uploaded_Music_File_(Local_Upload)\"],\n    bg_music_url: form[\"Music URL\"]\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -100,
+        14200,
         0
       ],
-      "id": "code-node-1",
+      "id": "final-code-node",
       "name": "Format JSON Payload"
     },
     {
@@ -246,11 +1297,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        200,
+        14500,
         0
       ],
-      "id": "http-post-1",
-      "name": "Send Request to FastAPI"
+      "id": "api-node",
+      "name": "Send to FastAPI"
     },
     {
       "parameters": {
@@ -260,10 +1311,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        500,
+        14800,
         0
       ],
-      "id": "wait-node-1",
+      "id": "wait-node",
       "name": "Wait for Video Completion",
       "webhookId": "00000000-0000-0000-0000-000000000000"
     },
@@ -277,11 +1328,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        800,
+        15100,
         0
       ],
-      "id": "http-download-1",
-      "name": "Download Video File"
+      "id": "download-node",
+      "name": "Download Video"
     },
     {
       "parameters": {
@@ -293,10 +1344,10 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        1100,
+        15400,
         0
       ],
-      "id": "gdrive-node-1",
+      "id": "gdrive-node",
       "name": "Upload to Google Drive",
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -311,15 +1362,617 @@
       "main": [
         [
           {
-            "node": "Upload Voiceover (if URL provided)",
+            "node": "Has Scene 1 Media (Local Upload)?",
             "type": "main",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "Has Scene 1 Media (Local Upload)?": {
+      "main": [
+        [
           {
-            "node": "Upload Background Music (if URL provided)",
+            "node": "Upload Scene 1 Media (Local Upload)",
             "type": "main",
             "index": 0
-          },
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 1 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 1 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 1 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 1 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 1 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 1 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 2 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 2 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 2 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 2 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 2 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 2 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 2 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 2 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 2 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 3 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 3 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 3 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 3 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 3 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 3 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 3 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 3 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 3 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 4 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 4 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 4 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 4 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 4 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 4 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 4 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 4 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 4 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 5 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 5 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 5 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 5 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 5 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 5 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 5 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 5 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 5 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 6 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 6 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 6 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 6 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 6 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 6 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 6 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 6 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 6 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 7 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 7 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 7 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 7 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 7 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 7 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 7 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 7 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 7 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 8 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 8 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 8 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 8 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 8 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 8 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 8 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 8 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 8 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 9 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 9 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 9 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 9 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 9 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 9 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 9 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 9 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 9 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Scene 10 Media (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Scene 10 Media (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Scene 10 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Scene 10 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Scene 10 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Scene 10 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scene 10 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Scene 10 Media (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Scene 10 Media (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Voiceover File (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Voiceover File (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Voiceover File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Voiceover File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Voiceover File (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Voiceover File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Voiceover File (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Voiceover File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Voiceover File (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Has Music File (Local Upload)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Music File (Local Upload)?": {
+      "main": [
+        [
+          {
+            "node": "Upload Music File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Music File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Music File (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Save Music File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Music File (Local Upload)": {
+      "main": [
+        [
+          {
+            "node": "Merge Music File (Local Upload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Music File (Local Upload)": {
+      "main": [
+        [
           {
             "node": "Format JSON Payload",
             "type": "main",
@@ -332,14 +1985,14 @@
       "main": [
         [
           {
-            "node": "Send Request to FastAPI",
+            "node": "Send to FastAPI",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send Request to FastAPI": {
+    "Send to FastAPI": {
       "main": [
         [
           {
@@ -354,14 +2007,14 @@
       "main": [
         [
           {
-            "node": "Download Video File",
+            "node": "Download Video",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Download Video File": {
+    "Download Video": {
       "main": [
         [
           {

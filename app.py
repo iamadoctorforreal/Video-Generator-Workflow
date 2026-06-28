@@ -270,7 +270,8 @@ class VideoRequest(BaseModel):
 
     # Voiceover settings
     generate_voiceover: bool = True        # If False, no TTS is generated
-    uploaded_voiceover: Optional[str] = None  # filename of uploaded voiceover (used when generate_voiceover=False)
+    uploaded_voiceover: Optional[str] = None  # filename of an already-uploaded voiceover in uploaded_voiceovers/
+    voiceover_url: Optional[str] = None       # Remote URL to a voiceover audio file — auto-downloaded on job start
 
     # Caption settings
     add_captions: bool = True
@@ -279,6 +280,7 @@ class VideoRequest(BaseModel):
     # Background music settings
     add_background_music: bool = True
     bg_music_file: Optional[str] = None    # filename from uploaded_music dir, or "bg_music.mp3" / "bg_music2.mp3"
+    bg_music_url: Optional[str] = None     # Remote URL to a music file — auto-downloaded on job start
     bg_music_volume: float = 0.12          # 0.0 to 1.0
 
     # Video clip audio settings
@@ -289,7 +291,7 @@ class VideoRequest(BaseModel):
     add_effects: bool = True
     orientation: str = "portrait"          # "portrait" or "landscape"
     job_id: Optional[str] = None           # For resuming a completed job
-    
+
     # Webhook integration
     webhook_url: Optional[str] = None      # URL to ping when job completes (or fails)
 
@@ -572,9 +574,39 @@ def generate_video_task(job_id: str, request: VideoRequest):
         jobs[job_id]["status"] = "processing"
         jobs[job_id]["total_scenes"] = len(request.scenes)
         save_jobs()
-        
+
         BASE_MEDIA_PATH = os.path.join(os.getcwd(), "images")
-        print(f"\n🎬 Job {job_id}: Generation Started. Total Scenes: {len(request.scenes)}")
+        print(f"\n Job {job_id}: Generation Started. Total Scenes: {len(request.scenes)}")
+
+        # --- Auto-download voiceover from URL if provided ---
+        if not request.generate_voiceover and request.voiceover_url and not request.uploaded_voiceover:
+            print(f"Downloading voiceover from URL: {request.voiceover_url}")
+            downloaded = download_url_media(request.voiceover_url)
+            if downloaded:
+                # Move into uploaded_voiceovers dir so the rest of the pipeline finds it
+                ext = os.path.splitext(downloaded)[-1] or ".mp3"
+                unique_name = f"vo_{uuid.uuid4().hex[:8]}_remote{ext}"
+                dest = os.path.join(VOICEOVER_UPLOAD_DIR, unique_name)
+                shutil.move(downloaded, dest)
+                # Patch the request object so downstream logic sees it as a normal upload
+                request = request.model_copy(update={"uploaded_voiceover": unique_name})
+                print(f"Voiceover downloaded and saved as: {unique_name}")
+            else:
+                print("Failed to download voiceover URL — continuing without custom voiceover.")
+
+        # --- Auto-download background music from URL if provided ---
+        if request.add_background_music and request.bg_music_url and not request.bg_music_file:
+            print(f"Downloading background music from URL: {request.bg_music_url}")
+            downloaded = download_url_media(request.bg_music_url)
+            if downloaded:
+                ext = os.path.splitext(downloaded)[-1] or ".mp3"
+                unique_name = f"music_{uuid.uuid4().hex[:8]}_remote{ext}"
+                dest = os.path.join(MUSIC_UPLOAD_DIR, unique_name)
+                shutil.move(downloaded, dest)
+                request = request.model_copy(update={"bg_music_file": unique_name})
+                print(f"Music downloaded and saved as: {unique_name}")
+            else:
+                print("Failed to download music URL — will use default music.")
 
         # --- Handle single uploaded voiceover for ALL scenes ---
         single_voiceover_clip = None
@@ -785,10 +817,11 @@ def generate_video_task(job_id: str, request: VideoRequest):
 
         output_name = f"Story_Final_{job_id}.mp4"
         thumbnail_name = f"Thumbnail_{job_id}.jpg"
+        output_path = os.path.join(UPLOAD_DIR, output_name)
         
         final_video.write_videofile(
-            output_name, fps=24, codec="libx264", audio_codec="aac",
-            threads=max(1, os.cpu_count() // 2), preset="medium", logger="bar"
+            output_path, fps=24, codec="libx264", audio_codec="aac",
+            threads=max(1, os.cpu_count() // 2), preset="fast", logger="bar"
         )
 
         try:

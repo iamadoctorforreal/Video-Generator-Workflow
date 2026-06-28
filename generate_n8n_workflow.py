@@ -1,201 +1,234 @@
 import json
 
-# ─── FORM TRIGGER ────────────────────────────────────────────────────────────
+# =============================================================================
+#  n8n Workflow Generator — Ultimate Hybrid Video Generator
+#
+#  Supports:
+#  - Up to 10 local Scene Media uploads (File fields)
+#  - Or Media URLs (Text area)
+#  - Local Voiceover & Music uploads
+#  - Or Voiceover & Music URLs
+# =============================================================================
+
+# ─── 1. FORM TRIGGER ─────────────────────────────────────────────────────────
+form_fields = [
+    {"fieldLabel": "Script (one paragraph per scene, separated by blank line)", "fieldType": "textarea", "requiredField": True},
+    {"fieldLabel": "Media URLs (one per line, alternative to local uploads)", "fieldType": "textarea"},
+]
+
+# Add 10 individual scene upload fields
+for i in range(1, 11):
+    form_fields.append({
+        "fieldLabel": f"Scene {i} Media (Local Upload)",
+        "fieldType": "file"
+    })
+
+# Audio & Settings
+form_fields.extend([
+    {"fieldLabel": "Voiceover File (Local Upload)", "fieldType": "file"},
+    {"fieldLabel": "Voiceover URL", "fieldType": "text"},
+    {"fieldLabel": "Music File (Local Upload)", "fieldType": "file"},
+    {"fieldLabel": "Music URL", "fieldType": "text"},
+    {"fieldLabel": "AI Voice", "fieldType": "dropdown", "fieldOptions": {"values": [{"option": "af_bella"}, {"option": "am_adam"}]}},
+    {"fieldLabel": "Generate AI Voiceover?", "fieldType": "dropdown", "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}},
+    {"fieldLabel": "Add Captions?", "fieldType": "dropdown", "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}},
+    {"fieldLabel": "Add Background Music?", "fieldType": "dropdown", "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}}
+])
+
 form_node = {
     "parameters": {
-        "formTitle": "🎬 Video Generator",
-        "formDescription": "Fill in what you need. Most fields are optional — only the Script is required for AI voiceover generation.",
-        "formFields": {
-            "values": [
-                {
-                    "fieldLabel": "Script (one scene per blank-line-separated paragraph)",
-                    "fieldType": "textarea",
-                    "requiredField": True
-                },
-                {
-                    "fieldLabel": "Media URLs (one URL per line, matched to scenes — optional)",
-                    "fieldType": "textarea"
-                },
-                {
-                    "fieldLabel": "Voiceover Audio URL (optional — paste a direct URL to an audio file to use as voiceover instead of AI TTS)",
-                    "fieldType": "text"
-                },
-                {
-                    "fieldLabel": "Background Music URL (optional — paste a direct URL to an mp3/wav to use as background music)",
-                    "fieldType": "text"
-                },
-                {
-                    "fieldLabel": "Voice",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [
-                        {"option": "af_bella"},
-                        {"option": "af_sarah"},
-                        {"option": "am_adam"},
-                        {"option": "bf_emma"},
-                        {"option": "bm_george"}
-                    ]}
-                },
-                {
-                    "fieldLabel": "Generate AI Voiceover?",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}
-                },
-                {
-                    "fieldLabel": "Add Captions?",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}
-                },
-                {
-                    "fieldLabel": "Caption Position",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "bottom"}, {"option": "center"}, {"option": "top"}]}
-                },
-                {
-                    "fieldLabel": "Add Background Music?",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}
-                },
-                {
-                    "fieldLabel": "Background Music Volume (0.0 to 1.0, default 0.12)",
-                    "fieldType": "text"
-                },
-                {
-                    "fieldLabel": "Keep Original Video Audio?",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "false"}, {"option": "true"}]}
-                },
-                {
-                    "fieldLabel": "Original Video Audio Volume (0.0 to 1.0, default 0.4)",
-                    "fieldType": "text"
-                },
-                {
-                    "fieldLabel": "Add Pan/Zoom Effects? (recommended for still images)",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "true"}, {"option": "false"}]}
-                },
-                {
-                    "fieldLabel": "Orientation",
-                    "fieldType": "dropdown",
-                    "fieldOptions": {"values": [{"option": "landscape"}, {"option": "portrait"}]}
-                }
-            ]
-        },
+        "formTitle": "Video Generator - Studio Mode",
+        "formDescription": "Upload up to 10 scene images/videos directly, or paste URLs. Leave blank scenes to get a dark background.",
+        "formFields": {"values": form_fields},
         "options": {}
     },
     "type": "n8n-nodes-base.formTrigger",
     "typeVersion": 2.5,
-    "position": [-800, 0],
+    "position": [-500, 0],
     "id": "form-trigger-1",
-    "name": "Advanced Form Trigger"
+    "name": "Advanced Form Trigger",
+    "webhookId": "22222222-2222-2222-2222-222222222222"
 }
 
-# ─── UPLOAD VOICEOVER (conditional — only if a URL was provided) ──────────────
-upload_voiceover_node = {
-    "parameters": {
-        "method": "POST",
-        "url": "http://video-generator:8000/upload-voiceover",
-        "sendBody": True,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-            "parameters": [
-                {
-                    "name": "file",
-                    "value": "={{ $json['Voiceover Audio URL (optional — paste a direct URL to an audio file to use as voiceover instead of AI TTS)'] }}"
-                }
-            ]
+nodes = [form_node]
+connections = {}
+
+# ─── 2. BUILD SEQUENTIAL UPLOAD CHAIN FOR 10 SCENES + AUDIO ──────────────────
+# We build a linear chain of IF -> Upload -> Merge for every possible binary file
+# This guarantees exact ordering and avoids parallel merge issues in n8n.
+
+binary_fields = [f"Scene {i} Media (Local Upload)" for i in range(1, 11)] + [
+    "Voiceover File (Local Upload)",
+    "Music File (Local Upload)"
+]
+
+prev_node = "Advanced Form Trigger"
+x_pos = -200
+y_pos = 0
+
+for field_name in binary_fields:
+    # URL endpoint depends on field type
+    if "Scene" in field_name:
+        endpoint = "/upload-image"
+        # We need a safe JS property name to access the binary data (n8n usually makes it lowercase with underscores or keeps it verbatim)
+        # We use a loose match in Object.keys()
+    elif "Voiceover" in field_name:
+        endpoint = "/upload-voiceover"
+    else:
+        endpoint = "/upload-music"
+
+    # IF Node
+    if_node = {
+        "parameters": {
+            "conditions": {
+                "options": {"caseSensitive": False, "leftValue": "", "typeValidation": "loose", "version": 2},
+                "conditions": [{
+                    "id": "check-binary",
+                    "leftValue": f"={{{{ Object.keys($('Advanced Form Trigger').item.binary || {{}}).some(k => k === '{field_name}') }}}}",
+                    "rightValue": True,
+                    "operator": {"type": "boolean", "operation": "equals"}
+                }],
+                "combinator": "and"
+            }
         },
-        "options": {}
-    },
-    "type": "n8n-nodes-base.httpRequest",
-    "typeVersion": 4.3,
-    "position": [-500, -200],
-    "id": "upload-vo-1",
-    "name": "Upload Voiceover (if URL provided)"
-}
-
-# ─── UPLOAD BACKGROUND MUSIC (conditional — only if a URL was provided) ──────
-upload_music_node = {
-    "parameters": {
-        "method": "POST",
-        "url": "http://video-generator:8000/upload-music",
-        "sendBody": True,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-            "parameters": [
-                {
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [x_pos, y_pos],
+        "id": f"if-{field_name}",
+        "name": f"Has {field_name}?"
+    }
+    
+    # Upload Node
+    upload_node = {
+        "parameters": {
+            "method": "POST",
+            "url": f"http://video-generator:8000{endpoint}",
+            "sendBody": True,
+            "contentType": "multipart-form-data",
+            "bodyParameters": {
+                "parameters": [{
                     "name": "file",
-                    "value": "={{ $json['Background Music URL (optional — paste a direct URL to an mp3/wav to use as background music)'] }}"
-                }
-            ]
+                    "parameterType": "formBinaryData",
+                    "inputDataFieldName": f"={{{{ Object.keys($('Advanced Form Trigger').item.binary).find(k => k === '{field_name}') }}}}"
+                }]
+            }
         },
-        "options": {}
-    },
-    "type": "n8n-nodes-base.httpRequest",
-    "typeVersion": 4.3,
-    "position": [-500, 200],
-    "id": "upload-music-1",
-    "name": "Upload Background Music (if URL provided)"
-}
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [x_pos + 300, y_pos - 100],
+        "id": f"upload-{field_name}",
+        "name": f"Upload {field_name}"
+    }
+    
+    # Set Node (saves the uploaded filename to the item stream so the final code node can read it)
+    set_node = {
+        "parameters": {
+            "assignments": {
+                "assignments": [
+                    {
+                        "id": "1",
+                        "name": f"uploaded_{field_name.replace(' ', '_')}",
+                        "value": "={{ $json.filename }}",
+                        "type": "string"
+                    }
+                ]
+            },
+            "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [x_pos + 600, y_pos - 100],
+        "id": f"set-{field_name}",
+        "name": f"Save {field_name}"
+    }
 
-# ─── CODE: FORMAT PAYLOAD ─────────────────────────────────────────────────────
-# Note: This node merges the form data with the optional upload results.
-# If voiceover/music URLs were blank, the upload nodes are skipped by the IF nodes
-# and the uploaded_voiceover / bg_music_file fields will be null.
+    # Merge Node (brings True/False paths back together)
+    merge_node = {
+        "parameters": {"mode": "passThrough", "output": "first"},
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [x_pos + 900, y_pos],
+        "id": f"merge-{field_name}",
+        "name": f"Merge {field_name}"
+    }
+
+    # Add to nodes list
+    nodes.extend([if_node, upload_node, set_node, merge_node])
+    
+    # Connect
+    if prev_node not in connections: connections[prev_node] = {"main": [[]]}
+    connections[prev_node]["main"][0].append({"node": if_node["name"], "type": "main", "index": 0})
+    
+    connections[if_node["name"]] = {
+        "main": [
+            [{"node": upload_node["name"], "type": "main", "index": 0}], # True
+            [{"node": merge_node["name"], "type": "main", "index": 0}]   # False
+        ]
+    }
+    connections[upload_node["name"]] = {"main": [[{"node": set_node["name"], "type": "main", "index": 0}]]}
+    connections[set_node["name"]] = {"main": [[{"node": merge_node["name"], "type": "main", "index": 0}]]}
+    
+    # Advance
+    prev_node = merge_node["name"]
+    x_pos += 1200
+
+# ─── 3. FINAL CODE NODE TO BUILD PAYLOAD ──────────────────────────────────────
+
 code_node = {
     "parameters": {
-        "jsCode": r"""
+        "jsCode": f"""
 const form = $('Advanced Form Trigger').item.json;
+const stream = $input.first().json; // accumulated from Set nodes
 
-const rawScript = form["Script (one scene per blank-line-separated paragraph)"] || "";
-const rawMediaUrls = form["Media URLs (one URL per line, matched to scenes — optional)"] || "";
+const rawScript = form["Script (one paragraph per scene, separated by blank line)"] || "";
+const rawMediaUrls = form["Media URLs (one per line, alternative to local uploads)"] || "";
 
-const scriptLines = rawScript.split(/\r?\n\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
-const mediaUrls = rawMediaUrls.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+const scriptLines = rawScript.split(/\\r?\\n\\r?\\n/).map(s => s.trim()).filter(Boolean);
+const urlLines = rawMediaUrls.split(/\\r?\\n/).map(s => s.trim()).filter(Boolean);
 
-const scenes = scriptLines.map((text, index) => ({
-  text: text,
-  media_name: mediaUrls[index] ? mediaUrls[index] : "detect"
-}));
+const scenes = scriptLines.map((text, i) => {{
+  // 1. Check if a local file was uploaded for this specific scene (1-indexed)
+  const localFileName = stream[`uploaded_Scene_${{i+1}}_Media_(Local_Upload)`];
+  
+  // 2. Fallback to URL if provided
+  const urlFallback = urlLines[i];
+  
+  return {{
+    text,
+    media_name: localFileName || urlFallback || "detect"
+  }};
+}});
 
-const toBool = (val, def) => val === undefined || val === "" ? def : val === "true";
-
-// Get optional uploaded filenames from previous nodes (null-safe)
-let uploadedVo = null;
-try { uploadedVo = $('Upload Voiceover (if URL provided)').item.json.filename || null; } catch(e) {}
-
-let uploadedMusic = null;
-try { uploadedMusic = $('Upload Background Music (if URL provided)').item.json.filename || null; } catch(e) {}
-
+const toBool = (val, def) => (val === undefined || val === "") ? def : val === "true";
 const generateVo = toBool(form["Generate AI Voiceover?"], true);
 
-return [{
-  json: {
+return [{{
+  json: {{
     scenes,
-    voice: form["Voice"] || "af_bella",
+    voice: form["AI Voice"] || "af_bella",
     generate_voiceover: generateVo,
-    uploaded_voiceover: generateVo ? null : uploadedVo,
+    uploaded_voiceover: generateVo ? null : stream["uploaded_Voiceover_File_(Local_Upload)"],
+    voiceover_url: generateVo ? null : form["Voiceover URL"],
     add_captions: toBool(form["Add Captions?"], true),
-    caption_position: form["Caption Position"] || "bottom",
     add_background_music: toBool(form["Add Background Music?"], true),
-    bg_music_file: uploadedMusic || null,
-    bg_music_volume: parseFloat(form["Background Music Volume (0.0 to 1.0, default 0.12)"] || "0.12"),
-    keep_clip_audio: toBool(form["Keep Original Video Audio?"], false),
-    clip_audio_volume: parseFloat(form["Original Video Audio Volume (0.0 to 1.0, default 0.4)"] || "0.4"),
-    add_effects: toBool(form["Add Pan/Zoom Effects? (recommended for still images)"], true),
-    orientation: form["Orientation"] || "landscape"
-  }
-}];
+    bg_music_file: stream["uploaded_Music_File_(Local_Upload)"],
+    bg_music_url: form["Music URL"]
+  }}
+}}];
 """
     },
     "type": "n8n-nodes-base.code",
     "typeVersion": 2,
-    "position": [-100, 0],
-    "id": "code-node-1",
+    "position": [x_pos, 0],
+    "id": "final-code-node",
     "name": "Format JSON Payload"
 }
+nodes.append(code_node)
+connections[prev_node] = {"main": [[{"node": "Format JSON Payload", "type": "main", "index": 0}]]}
 
-# ─── SEND TO FASTAPI ──────────────────────────────────────────────────────────
-http_post_node = {
+# ─── 4. API CALLS ─────────────────────────────────────────────────────────────
+
+api_node = {
     "parameters": {
         "method": "POST",
         "url": "http://video-generator:8000/generate-video",
@@ -206,24 +239,22 @@ http_post_node = {
     },
     "type": "n8n-nodes-base.httpRequest",
     "typeVersion": 4.3,
-    "position": [200, 0],
-    "id": "http-post-1",
-    "name": "Send Request to FastAPI"
+    "position": [x_pos + 300, 0],
+    "id": "api-node",
+    "name": "Send to FastAPI"
 }
 
-# ─── WAIT FOR WEBHOOK ─────────────────────────────────────────────────────────
 wait_node = {
     "parameters": {"resume": "webhook", "options": {}},
     "type": "n8n-nodes-base.wait",
     "typeVersion": 1.1,
-    "position": [500, 0],
-    "id": "wait-node-1",
+    "position": [x_pos + 600, 0],
+    "id": "wait-node",
     "name": "Wait for Video Completion",
     "webhookId": "00000000-0000-0000-0000-000000000000"
 }
 
-# ─── DOWNLOAD VIDEO ───────────────────────────────────────────────────────────
-http_download_node = {
+download_node = {
     "parameters": {
         "method": "GET",
         "url": "={{ $json.body.video_url }}",
@@ -232,12 +263,11 @@ http_download_node = {
     },
     "type": "n8n-nodes-base.httpRequest",
     "typeVersion": 4.3,
-    "position": [800, 0],
-    "id": "http-download-1",
-    "name": "Download Video File"
+    "position": [x_pos + 900, 0],
+    "id": "download-node",
+    "name": "Download Video"
 }
 
-# ─── UPLOAD TO GOOGLE DRIVE ───────────────────────────────────────────────────
 gdrive_node = {
     "parameters": {
         "operation": "upload",
@@ -247,61 +277,29 @@ gdrive_node = {
     },
     "type": "n8n-nodes-base.googleDrive",
     "typeVersion": 3,
-    "position": [1100, 0],
-    "id": "gdrive-node-1",
+    "position": [x_pos + 1200, 0],
+    "id": "gdrive-node",
     "name": "Upload to Google Drive",
-    "credentials": {
-        "googleDriveOAuth2Api": {
-            "id": "",
-            "name": "Google Drive account"
-        }
-    }
+    "credentials": {"googleDriveOAuth2Api": {"id": "", "name": "Google Drive account"}}
 }
 
-# ─── ASSEMBLE WORKFLOW ────────────────────────────────────────────────────────
-# NOTE: The upload nodes run in parallel after the form trigger.
-# The Code node merges the results before sending to FastAPI.
-# If a user leaves the voiceover/music URL blank, those upload nodes will still
-# fire but return an error — to fully make them conditional, an IF node per upload
-# would be needed. For simplicity, the Code node handles null-safety.
-new_workflow = {
-    "name": "Advanced Video Generation to Google Drive",
-    "nodes": [
-        form_node,
-        upload_voiceover_node,
-        upload_music_node,
-        code_node,
-        http_post_node,
-        wait_node,
-        http_download_node,
-        gdrive_node
-    ],
-    "connections": {
-        "Advanced Form Trigger": {
-            "main": [[
-                {"node": "Upload Voiceover (if URL provided)", "type": "main", "index": 0},
-                {"node": "Upload Background Music (if URL provided)", "type": "main", "index": 0},
-                {"node": "Format JSON Payload", "type": "main", "index": 0}
-            ]]
-        },
-        "Format JSON Payload": {
-            "main": [[{"node": "Send Request to FastAPI", "type": "main", "index": 0}]]
-        },
-        "Send Request to FastAPI": {
-            "main": [[{"node": "Wait for Video Completion", "type": "main", "index": 0}]]
-        },
-        "Wait for Video Completion": {
-            "main": [[{"node": "Download Video File", "type": "main", "index": 0}]]
-        },
-        "Download Video File": {
-            "main": [[{"node": "Upload to Google Drive", "type": "main", "index": 0}]]
-        }
-    },
+nodes.extend([api_node, wait_node, download_node, gdrive_node])
+connections["Format JSON Payload"] = {"main": [[{"node": "Send to FastAPI", "type": "main", "index": 0}]]}
+connections["Send to FastAPI"] = {"main": [[{"node": "Wait for Video Completion", "type": "main", "index": 0}]]}
+connections["Wait for Video Completion"] = {"main": [[{"node": "Download Video", "type": "main", "index": 0}]]}
+connections["Download Video"] = {"main": [[{"node": "Upload to Google Drive", "type": "main", "index": 0}]]}
+
+# ─── SAVE TO FILE ─────────────────────────────────────────────────────────────
+
+workflow = {
+    "name": "Ultimate Ultimate Video Generator (10 Scenes + Audio)",
+    "nodes": nodes,
+    "connections": connections,
     "active": False,
     "settings": {"executionOrder": "v1"}
 }
 
 with open("n8n_workflow_updated.json", "w") as f:
-    json.dump(new_workflow, f, indent=2)
+    json.dump(workflow, f, indent=2)
 
-print("Done! Updated workflow written to n8n_workflow_updated.json")
+print(f"Done! Created ultimate workflow with {len(nodes)} nodes.")
