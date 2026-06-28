@@ -2832,7 +2832,14 @@
                 title: "Ready to Create? 🚀",
                 text: "When you are happy with your script and settings, click <b>Launch</b> to compile your video in the background! You can check your completed projects in the <b>Gallery</b> tab.",
                 target: "#studio-render-btn",
-                setup: () => switchMode('studio')
+                setup: () => {
+                    switchMode('studio');
+                    // Scroll the button into view so it's actually visible before we highlight it
+                    setTimeout(() => {
+                        const btn = document.getElementById('studio-render-btn');
+                        if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
             }
         ];
 
@@ -2930,29 +2937,45 @@
             const popover = document.getElementById('tour-popover');
 
             const rect = el.getBoundingClientRect();
-            const popH = 240; // estimated popover height
+            const popH = 240;
             const popW = 320;
-            const margin = 12;
+            const margin = 14;
             const vw = window.innerWidth;
             const vh = window.innerHeight;
 
-            // Default: try to place popover below the element
-            let top = rect.bottom + margin;
-            let left = rect.left + (rect.width / 2) - (popW / 2);
+            // Center the popover vertically relative to the element
+            const elMidY = rect.top + rect.height / 2;
+            let top, left;
 
-            // If popover would overflow bottom, place it above instead
-            if (top + popH > vh - 10) {
-                top = rect.top - popH - margin;
+            // --- Priority 1: Try RIGHT of element ---
+            if (rect.right + margin + popW < vw - 10) {
+                left = rect.right + margin;
+                top = elMidY - popH / 2;
             }
-
-            // If it still overflows the top (e.g. sticky nav), center it vertically
-            if (top < 10) {
+            // --- Priority 2: Try LEFT of element ---
+            else if (rect.left - margin - popW > 10) {
+                left = rect.left - margin - popW;
+                top = elMidY - popH / 2;
+            }
+            // --- Priority 3: Try BELOW element ---
+            else if (rect.bottom + margin + popH < vh - 10) {
+                top = rect.bottom + margin;
+                left = rect.left + (rect.width / 2) - (popW / 2);
+            }
+            // --- Priority 4: Try ABOVE element ---
+            else if (rect.top - margin - popH > 10) {
+                top = rect.top - margin - popH;
+                left = rect.left + (rect.width / 2) - (popW / 2);
+            }
+            // --- Fallback: Center in viewport ---
+            else {
                 top = Math.max(10, (vh - popH) / 2);
+                left = Math.max(10, (vw - popW) / 2);
             }
 
-            // Clamp horizontally
-            if (left < 10) left = 10;
-            if (left + popW > vw - 10) left = vw - popW - 10;
+            // Clamp both axes to stay on screen
+            top  = Math.max(10, Math.min(top, vh - popH - 10));
+            left = Math.max(10, Math.min(left, vw - popW - 10));
 
             popover.style.top  = `${top}px`;
             popover.style.left = `${left}px`;
