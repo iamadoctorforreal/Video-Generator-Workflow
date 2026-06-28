@@ -1244,7 +1244,7 @@
             pointer-events: all;
         }
         .tour-highlight {
-            position: absolute;
+            position: fixed;
             border-radius: var(--radius);
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px rgba(200, 169, 110, 0.4);
             border: 2px solid var(--accent);
@@ -1253,15 +1253,17 @@
             transition: all 0.3s ease-out;
         }
         .tour-popover {
-            position: absolute;
+            position: fixed;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 20px;
             width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             z-index: 10001;
-            transition: all 0.3s ease-out;
+            transition: top 0.3s ease-out, left 0.3s ease-out;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -2910,41 +2912,49 @@
         function highlightElement(el) {
             const highlight = document.getElementById('tour-highlight');
             highlight.style.display = 'block';
-            highlight.style.position = 'absolute';
-            
-            const rect = el.getBoundingClientRect();
-            const scrollY = window.scrollY;
-            const scrollX = window.scrollX;
 
-            highlight.style.top = `${rect.top + scrollY - 6}px`;
-            highlight.style.left = `${rect.left + scrollX - 6}px`;
-            highlight.style.width = `${rect.width + 12}px`;
+            const rect = el.getBoundingClientRect();
+            // Use fixed positioning — works for both sticky nav and scrollable content
+            highlight.style.top    = `${rect.top - 6}px`;
+            highlight.style.left   = `${rect.left - 6}px`;
+            highlight.style.width  = `${rect.width + 12}px`;
             highlight.style.height = `${rect.height + 12}px`;
 
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Only scroll for non-sticky elements (those not near the top of the viewport)
+            if (rect.top > 120) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         function positionPopover(el) {
             const popover = document.getElementById('tour-popover');
-            popover.style.transform = 'none';
-            popover.style.position = 'absolute';
 
             const rect = el.getBoundingClientRect();
-            const scrollY = window.scrollY;
-            const scrollX = window.scrollX;
+            const popH = 240; // estimated popover height
+            const popW = 320;
+            const margin = 12;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
 
-            let top = rect.bottom + scrollY + 12;
-            let left = rect.left + scrollX + (rect.width / 2) - 160;
+            // Default: try to place popover below the element
+            let top = rect.bottom + margin;
+            let left = rect.left + (rect.width / 2) - (popW / 2);
 
-            if (left < 10) left = 10;
-            if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
-
-            // If it overflows the screen height, display it above the element instead
-            if (rect.bottom + 250 > window.innerHeight) {
-                top = rect.top + scrollY - popover.offsetHeight - 12;
+            // If popover would overflow bottom, place it above instead
+            if (top + popH > vh - 10) {
+                top = rect.top - popH - margin;
             }
 
-            popover.style.top = `${top}px`;
+            // If it still overflows the top (e.g. sticky nav), center it vertically
+            if (top < 10) {
+                top = Math.max(10, (vh - popH) / 2);
+            }
+
+            // Clamp horizontally
+            if (left < 10) left = 10;
+            if (left + popW > vw - 10) left = vw - popW - 10;
+
+            popover.style.top  = `${top}px`;
             popover.style.left = `${left}px`;
         }
 
