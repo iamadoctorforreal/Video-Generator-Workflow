@@ -299,7 +299,8 @@ class VideoRequest(BaseModel):
     bg_music_url: Optional[str] = None     # Remote URL to a music file — auto-downloaded on job start
     bg_music_volume: float = 0.12          # 0.0 to 1.0
 
-    # Video clip audio settings
+    # Video clip settings
+    clip_duration_mode: str = "full"       # "full" = use video's original duration, "fixed" = 4 seconds per scene
     keep_clip_audio: bool = False          # Whether to preserve original video clip audio
     clip_audio_volume: float = 0.4         # Volume of the original clip audio (0.0 to 1.0)
 
@@ -310,6 +311,7 @@ class VideoRequest(BaseModel):
 
     # Webhook integration
     webhook_url: Optional[str] = None      # URL to ping when job completes (or fails)
+    progress_webhook_url: Optional[str] = None # URL to ping with progress updates
 
 
 def sanitize_text_for_tts(text):
@@ -532,6 +534,41 @@ def _send_webhook(job_id: str, status: str, message: str, filename: str = None, 
     _threading.Thread(target=fire, daemon=True).start()
 
 
+def _send_progress_webhook(job_id: str, status: str, progress_percent: int, progress_message: str):
+    """Sends a fire-and-forget progress webhook to the user's provided URL."""
+    progress_webhook_url = jobs[job_id].get("progress_webhook_url")
+    if not progress_webhook_url:
+        return
+
+    payload = {
+        "job_id": job_id,
+        "status": status,
+        "progress_percent": progress_percent,
+        "progress_message": progress_message,
+        "elapsed_seconds": round(time.time() - jobs[job_id].get("started_at", time.time()), 2)
+    }
+    
+    def fire():
+        try:
+            print(f"🔔 Sending progress webhook for job {job_id} to {progress_webhook_url} ({progress_percent}%)")
+            requests.post(progress_webhook_url, json=payload, timeout=5)
+        except Exception as e:
+            print(f"⚠️ Progress webhook failed for job {job_id}: {e}")
+            
+    _threading.Thread(target=fire, daemon=True).start()
+
+
+def _update_job_progress(job_id: str, status: str, progress_percent: int, progress_message: str, save: bool = True):
+    if job_id not in jobs:
+        return
+    jobs[job_id]["status"] = status
+    jobs[job_id]["progress_percent"] = progress_percent
+    jobs[job_id]["progress_message"] = progress_message
+    if save:
+        save_jobs()
+    _send_progress_webhook(job_id, status, progress_percent, progress_message)
+
+
 # Start background cleanup daemon
 import threading
 _cleanup_thread = threading.Thread(target=_background_cleanup_loop, daemon=True)
@@ -587,9 +624,8 @@ def download_url_media(url: str) -> str | None:
 
 def generate_video_task(job_id: str, request: VideoRequest):
     try:
-        jobs[job_id]["status"] = "processing"
         jobs[job_id]["total_scenes"] = len(request.scenes)
-        save_jobs()
+        _update_job_progress(job_id, "processing", 5, f"Starting render of {len(request.scenes)} scenes...")
 
         BASE_MEDIA_PATH = os.path.join(os.getcwd(), "images")
         print(f"\n Job {job_id}: Generation Started. Total Scenes: {len(request.scenes)}")
@@ -661,7 +697,8 @@ def generate_video_task(job_id: str, request: VideoRequest):
 
         for i, scene in enumerate(request.scenes, 1):
             jobs[job_id]["current_scene"] = i
-            save_jobs()
+            percent = int(5 + ((i - 1) / len(request.scenes)) * 80)
+            _update_job_progress(job_id, "processing", percent, f"Rendering scene {i} of {len(request.scenes)}...")
             
             cp_path = os.path.join(CHECKPOINT_DIR, f"cp_{job_id}_scene_{i}.mp4")
             
@@ -691,13 +728,7 @@ def generate_video_task(job_id: str, request: VideoRequest):
 
                 if request.add_captions:
                     word_data = get_word_timestamps(audio_path, script_text=scene.text)
-            elif single_voiceover_clip and scene_durations:
-                if request.add_captions:
-                    word_data = uploaded_vo_words_by_scene.get(i - 1, [])
-
-            scene_dur = audio_clip.duration if audio_clip else (scene_durations[i-1] if scene_durations else 4.0)
-
-            # --- Build visual clip ---
+            # --- Build visual clip (determine path and type early to influence duration) ---
             media_file = auto_detected_images[i-1] if (scene.media_name == "detect" and i-1 < len(auto_detected_images)) else scene.media_name
             media_path = None
             if media_file:
@@ -706,7 +737,6 @@ def generate_video_task(job_id: str, request: VideoRequest):
                     downloaded = download_url_media(media_file)
                     if downloaded:
                         media_path = downloaded
-                        # Update is_video_clip based on the downloaded extension
                         media_file = os.path.basename(downloaded)
                 else:
                     p1 = os.path.join(BASE_MEDIA_PATH, media_file)
@@ -714,17 +744,66 @@ def generate_video_task(job_id: str, request: VideoRequest):
                     if os.path.exists(p1): media_path = p1
                     elif os.path.exists(p2): media_path = p2
 
+            is_video_clip = media_file and media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) if media_file else False
+            raw_clip = None
+            if is_video_clip and media_path and os.path.exists(media_path):
+                try:
+                    raw_clip = VideoFileClip(media_path)
+                except Exception as e:
+                    print(f"⚠️ Failed to load VideoFileClip for {media_path}: {e}")
+                    is_video_clip = False
+
+            # --- Determine audio duration for this scene ---
+            audio_clip = None
+            word_data = []
+
+            if request.generate_voiceover:
+                clean_text = sanitize_text_for_tts(scene.text)
+                audio_path = f"temp_{job_id}_{i}.wav"
+                try:
+                    samples, sample_rate = kokoro.create(clean_text, voice=request.voice, speed=1.0, lang="en-us")
+                    sf.write(audio_path, samples, sample_rate)
+                    audio_clip = AudioFileClip(audio_path)
+                except Exception as e:
+                    print(f"⚠️ TTS failed for scene {i}: {e}")
+                    audio_path = f"temp_{job_id}_{i}_silence.wav"
+                    sf.write(audio_path, np.zeros(int(24000 * 3)), 24000)
+                    audio_clip = AudioFileClip(audio_path)
+
+                if request.add_captions:
+                    word_data = get_word_timestamps(audio_path, script_text=scene.text)
+            elif single_voiceover_clip and scene_durations:
+                if request.add_captions:
+                    word_data = uploaded_vo_words_by_scene.get(i - 1, [])
+
+            # Override/determine scene duration
+            if audio_clip:
+                scene_dur = audio_clip.duration
+            elif single_voiceover_clip and scene_durations:
+                scene_dur = scene_durations[i-1]
+            elif is_video_clip and raw_clip:
+                # "full" = use the video's real length; "fixed" = cap at 4s
+                if request.clip_duration_mode == "full":
+                    scene_dur = raw_clip.duration
+                else:
+                    scene_dur = 4.0
+            else:
+                scene_dur = 4.0
+
+            # Determine whether to preserve clip audio
+            keep_clip_audio = request.keep_clip_audio
+            if not request.generate_voiceover and not request.uploaded_voiceover and not request.voiceover_url:
+                keep_clip_audio = True
+
             TARGET_W = 720 if request.orientation == "portrait" else 1280
             TARGET_H = 1280 if request.orientation == "portrait" else 720
-            is_video_clip = media_file and media_file.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) if media_file else False
 
-            raw_clip = None
+            scene_clip = None
             if not media_path or not os.path.exists(media_path):
                 scene_clip = ColorClip(size=(TARGET_W, TARGET_H), color=(30, 30, 30)).with_duration(scene_dur)
             else:
-                if is_video_clip:
-                    raw_clip = VideoFileClip(media_path)
-                    clip_audio_orig = raw_clip.audio if (request.keep_clip_audio and raw_clip.audio) else None
+                if is_video_clip and raw_clip:
+                    clip_audio_orig = raw_clip.audio if (keep_clip_audio and raw_clip.audio) else None
                     scene_clip = raw_clip.without_audio()
                     if scene_clip.duration < scene_dur:
                         scene_clip = scene_clip.with_effects([vfx.Loop(duration=scene_dur)])
@@ -798,8 +877,7 @@ def generate_video_task(job_id: str, request: VideoRequest):
             gc.collect()
 
         # --- FINAL ASSEMBLY ---
-        jobs[job_id]["status"] = "assembling"
-        save_jobs()
+        _update_job_progress(job_id, "assembling", 90, "Assembling scenes and baking audio...")
         print(f"🔗 Assembling Scenes for Job {job_id}...")
         
         # Small delay to ensure all file handles are released by the OS
@@ -843,8 +921,7 @@ def generate_video_task(job_id: str, request: VideoRequest):
         try:
             # Extract a frame as a thumbnail (at 2 seconds or middle of video)
             t_thumb = min(2.0, final_video.duration / 2)
-
-final_video.save_frame(os.path.join(UPLOAD_DIR, thumbnail_name), t=t_thumb)            #final_video.save_frame(thumbnail_name, t=t_thumb)
+            final_video.save_frame(os.path.join(UPLOAD_DIR, thumbnail_name), t=t_thumb)
         except Exception as e:
             print(f"⚠️ Thumbnail generation failed: {e}")
             thumbnail_name = None
@@ -855,10 +932,9 @@ final_video.save_frame(os.path.join(UPLOAD_DIR, thumbnail_name), t=t_thumb)     
         if single_voiceover_clip: single_voiceover_clip.close()
         
         # Keep checkpoints for a bit, or move to successful jobs
-        jobs[job_id]["status"] = "success"
         jobs[job_id]["filename"] = output_name
         jobs[job_id]["thumbnail"] = thumbnail_name
-        save_jobs()
+        _update_job_progress(job_id, "success", 100, "Complete!")
         print(f"✅ Job {job_id} Complete!")
         
         # Fire webhook!
@@ -867,9 +943,8 @@ final_video.save_frame(os.path.join(UPLOAD_DIR, thumbnail_name), t=t_thumb)     
     except Exception as e:
         import traceback
         traceback.print_exc()
-        jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
-        save_jobs()
+        _update_job_progress(job_id, "failed", -1, f"Failed: {str(e)}")
         
         # Fire webhook!
         _send_webhook(job_id, "failed", f"Render failed: {str(e)}")
@@ -901,14 +976,20 @@ async def generate_video(request: VideoRequest, req: Request):
             "started_at": time.time(), 
             "client_ip": client_ip,
             "webhook_url": request.webhook_url,
-            "base_url": str(req.base_url)
+            "progress_webhook_url": request.progress_webhook_url,
+            "base_url": str(req.base_url),
+            "progress_percent": 0,
+            "progress_message": "Queued"
         }
     else:
         # Resuming existing job — re-queue it
         jobs[job_id]["status"] = "queued"
         jobs[job_id]["error"] = None
         jobs[job_id]["webhook_url"] = request.webhook_url
+        jobs[job_id]["progress_webhook_url"] = request.progress_webhook_url
         jobs[job_id]["base_url"] = str(req.base_url)
+        jobs[job_id]["progress_percent"] = 0
+        jobs[job_id]["progress_message"] = "Queued"
 
     save_jobs()
     position = _enqueue_job(job_id, request)
@@ -925,12 +1006,22 @@ async def get_status(job_id: str):
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     response = jobs[job_id].copy()
-    status = response["status"]
-    if status in ["processing", "queued", "pending", "assembling"]:
-        response["elapsed_seconds"] = round(time.time() - response["started_at"], 2)
+    status = response.get("status")
+    
+    # Calculate queue position dynamically if queued
     if status == "queued":
         pos = _queue_position(job_id)
         response["queue_position"] = pos if pos is not None else 1
+        response["progress_percent"] = 0
+        response["progress_message"] = f"Queued (position {response['queue_position']})"
+    else:
+        # Fallback to stored progress fields if not set
+        response["progress_percent"] = response.get("progress_percent", 0)
+        response["progress_message"] = response.get("progress_message", "Unknown status")
+
+    if status in ["processing", "queued", "pending", "assembling"]:
+        response["elapsed_seconds"] = round(time.time() - response["started_at"], 2)
+        
     return response
 
 

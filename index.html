@@ -1463,6 +1463,13 @@
                         </label>
                     </div>
                     <div class="setting-row mt-8">
+                        <span class="setting-label">Clip Duration</span>
+                        <select id="s-clip-duration-mode" style="width:120px">
+                            <option value="full">Full length</option>
+                            <option value="fixed">Fixed 4s</option>
+                        </select>
+                    </div>
+                    <div class="setting-row mt-8">
                         <span class="setting-label">Keep clip audio</span>
                         <label class="toggle">
                             <input type="checkbox" id="s-clip-audio" onchange="onClipAudioToggle('s')" />
@@ -1637,6 +1644,13 @@
                             </label>
                         </div>
                         <div class="setting-row">
+                            <span class="setting-label">Clip Duration</span>
+                            <select id="p-clip-duration-mode" style="width:120px">
+                                <option value="full">Full length</option>
+                                <option value="fixed">Fixed 4s</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
                             <span class="setting-label">Clip audio</span>
                             <label class="toggle">
                                 <input type="checkbox" id="p-clip-audio" onchange="onClipAudioToggle('p')" />
@@ -1807,6 +1821,13 @@
                         <select id="c-orientation">
                             <option value="portrait">Portrait</option>
                             <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+                    <div class="setting-row mt-8">
+                        <span class="setting-label">Clip Duration</span>
+                        <select id="c-clip-duration-mode" style="width:120px">
+                            <option value="full">Full length</option>
+                            <option value="fixed">Fixed 4s</option>
                         </select>
                     </div>
                     <div class="setting-row mt-8">
@@ -2284,6 +2305,8 @@
                 scenesList = scenes;
             }
 
+            const clipDurMode = document.getElementById(`${prefix}-clip-duration-mode`)?.value || 'full';
+
             return {
                 scenes: scenesList,
                 voice: generateVo ? document.getElementById(`${prefix}-voice`).value : 'af_bella',
@@ -2296,6 +2319,7 @@
                 bg_music_volume: musicVol,
                 keep_clip_audio: clipAudio,
                 clip_audio_volume: clipAudioVol,
+                clip_duration_mode: clipDurMode,
                 add_effects: effects,
                 orientation
             };
@@ -2570,8 +2594,18 @@
             if (!file) return;
             const fd = new FormData();
             fd.append('file', file);
+            
+            const labelBtn = document.querySelector(`label[for="scene-file-${sceneId}"]`);
+            const originalHTML = labelBtn ? labelBtn.innerHTML : '';
+            if (labelBtn) {
+                labelBtn.innerHTML = `<span class="icon">hourglass_top</span>`;
+                labelBtn.style.pointerEvents = 'none';
+            }
+            showToast('Uploading scene media...', 'info');
+
             try {
                 const res = await fetch('/upload-image', { method: 'POST', body: fd });
+                if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
                 const sel = document.querySelector(`#${sceneId} .scene-media-select`);
                 const opt = new Option(data.filename, data.filename, true, true);
@@ -2583,6 +2617,11 @@
                 showToast('Uploaded ✓', 'success');
             } catch (e) {
                 showToast('Upload failed', 'error');
+            } finally {
+                if (labelBtn && originalHTML) {
+                    labelBtn.innerHTML = originalHTML;
+                    labelBtn.style.pointerEvents = 'auto';
+                }
             }
         }
 
@@ -2684,8 +2723,18 @@
             if (!file) return;
             const fd = new FormData();
             fd.append('file', file);
+            
+            const uploadBtn = document.querySelector('.gallery-upload');
+            const originalHTML = uploadBtn ? uploadBtn.innerHTML : '';
+            if (uploadBtn) {
+                uploadBtn.innerHTML = `<span class="icon">hourglass_top</span><span>Uploading...</span>`;
+                uploadBtn.style.pointerEvents = 'none';
+            }
+            showToast('Uploading backdrop...', 'info');
+
             try {
                 const res = await fetch('/upload-image', { method: 'POST', body: fd });
+                if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
                 // Update state
                 state.mediaFiles.push({ name: data.filename, url: data.url, type: file.type.startsWith('video') ? 'video' : 'image' });
@@ -2694,6 +2743,11 @@
                 showToast('Uploaded ✓', 'success');
             } catch (e) {
                 showToast('Upload failed', 'error');
+            } finally {
+                if (uploadBtn && originalHTML) {
+                    uploadBtn.innerHTML = originalHTML;
+                    uploadBtn.style.pointerEvents = 'auto';
+                }
             }
         }
 

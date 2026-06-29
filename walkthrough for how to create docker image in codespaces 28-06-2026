@@ -1,0 +1,211 @@
+# 🚀 Storyteller Suite — Full Deployment Guide
+
+From GitHub Codespaces → Docker Image → DockerHub → Production Stack
+
+---
+
+## Part 1 — Setting Up in GitHub Codespaces
+
+### Step 1: Open the Branch in Codespaces
+
+1. Go to **https://github.com/iamadoctorforreal/Video-Generator-Workflow**
+2. Click the **Branch** dropdown and select **`storyteller-suite-latest-update-28-06-2026`**
+3. Click the green **`<> Code`** button → click the **`Codespaces`** tab → click **`Create codespace on this branch`**
+4. Wait ~2 minutes for the environment to boot up. You will get a full VS Code editor in your browser.
+
+---
+
+### Step 2: Install Dependencies
+
+In the Codespaces terminal, run:
+
+```bash
+pip install -r requirements-cpu.txt
+```
+
+> [!NOTE]
+> This uses the CPU build of PyTorch. It will take 3–5 minutes in Codespaces. The app will run, just slower than on a GPU machine.
+
+---
+
+### Step 3: Fix ImageMagick Security Policy (Required for Captions)
+
+```bash
+sudo sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
+```
+
+---
+
+### Step 4: Test the App Runs
+
+```bash
+python app.py
+```
+
+Codespaces will automatically detect port `8000` and offer to open it. Click **Open in Browser** to confirm the Studio UI loads correctly.
+
+> [!IMPORTANT]
+> Press `Ctrl+C` to stop the app before building the Docker image. You don't need to keep it running.
+
+---
+
+## Part 2 — Building the Docker Image
+
+Your project already has a [Dockerfile](file:///c:/Users/RUKAYYAH%20IBRAHIM/Desktop/video-generator-workflow/Dockerfile) that handles everything (ffmpeg, imagemagick, Python dependencies, etc.).
+
+### Step 5: Log In to DockerHub
+
+```bash
+docker login
+```
+
+Enter your DockerHub **username** and **password** when prompted.
+
+---
+
+### Step 6: Build the Image
+
+Replace `yourdockerhubusername` with your actual DockerHub username:
+
+```bash
+docker build -t okayna/storyteller-suite:latest .
+```
+
+> [!NOTE]
+> This step downloads ~2GB of dependencies and will take **10–20 minutes** in Codespaces on the free tier. This is a one-time cost — future rebuilds are much faster due to Docker layer caching.
+
+---
+
+### Step 7: Push to DockerHub
+
+```bash
+docker push okayna/storyteller-suite:latest
+```
+
+Once complete, your image will be publicly available at:
+`https://hub.docker.com/r/yourdockerhubusername/storyteller-suite`
+
+---
+
+## Part 3 — Running the Full Stack from Docker
+
+This is the exciting part. Your [docker-compose.yml](file:///c:/Users/RUKAYYAH%20IBRAHIM/Desktop/video-generator-workflow/docker-compose.yml) already defines **both services** together:
+
+| Service | Container Name | Port |
+|---|---|---|
+| FastAPI Video App | `kokoro-video-api` | `8000` |
+| n8n Automation | `kokoro-n8n` | `5678` |
+
+### Step 8: Update docker-compose.yml to Use Your DockerHub Image
+
+On any machine where you want to run this, edit `docker-compose.yml` and change the `video-generator` service from building locally to pulling your published image:
+
+```yaml
+services:
+  video-generator:
+    image: yourdockerhubusername/storyteller-suite:latest  # ← Use this instead of build: .
+    container_name: kokoro-video-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./videos:/app/temp_uploads   # Persist generated videos
+      - ./uploads:/app/images        # Persist uploaded images
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: kokoro-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+      - N8N_DIAGNOSTICS_ENABLED=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+    depends_on:
+      - video-generator
+
+volumes:
+  n8n_data:
+```
+
+### Step 9: Start the Full Stack
+
+```bash
+docker compose up -d
+```
+
+- The `-d` flag runs everything in the background (detached mode).
+- Both containers start automatically. `n8n` waits for `video-generator` to be ready first (due to `depends_on`).
+
+### Step 10: Access the Apps
+
+| App | URL |
+|---|---|
+| Storyteller Studio UI | http://localhost:8000 |
+| n8n Automation Dashboard | http://localhost:5678 |
+
+To stop everything:
+```bash
+docker compose down
+```
+
+---
+
+## Part 4 — How n8n Connects to FastAPI
+
+This is the most important part to understand.
+
+### Inside Docker: Use the Service Name as the Hostname
+
+When both containers are running inside the same `docker compose` stack, Docker creates a **private internal network** between them. Within this network, each container can reach the others using their **service name** as a hostname — NOT `localhost`.
+
+So inside your n8n workflow, all HTTP Request nodes that call your FastAPI must use:
+
+```
+http://video-generator:8000/generate-video
+http://video-generator:8000/upload-image
+http://video-generator:8000/upload-voiceover
+http://video-generator:8000/upload-music
+```
+
+> [!IMPORTANT]
+> **`video-generator`** is the service name defined in `docker-compose.yml`. Docker automatically resolves this to the correct internal IP address of the FastAPI container. Never use `localhost:8000` inside n8n workflows when running in Docker — `localhost` inside the n8n container points to n8n itself, not your FastAPI!
+
+### When Running on a Cloud/Remote Server
+
+If your Docker stack is deployed on a remote server (e.g. a VPS, Railway, or Render), replace `video-generator` with the **public URL** of the FastAPI container:
+
+```
+https://your-server-ip:8000/generate-video
+```
+
+Or better, put it behind a reverse proxy (like Nginx or Caddy) and use a domain name:
+```
+https://api.yourdomain.com/generate-video
+```
+
+---
+
+## Summary: The Full Flow
+
+```
+GitHub Codespaces
+    └─ pip install + test locally
+    └─ docker build → creates image
+    └─ docker push → uploads to DockerHub
+
+Any Machine (your laptop, VPS, etc.)
+    └─ git clone (or just copy docker-compose.yml)
+    └─ docker compose up -d
+        ├─ FastAPI app starts on :8000  (Studio UI + API)
+        └─ n8n starts on :5678
+               └─ HTTP Request nodes call http://video-generator:8000/...
+                       └─ Videos generated, stored in container volumes
+                       └─ Webhook fires back to n8n with download URL
+```
